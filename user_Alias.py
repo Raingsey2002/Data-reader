@@ -179,7 +179,7 @@ def show():
     st.markdown("""
     <div style="margin-bottom: 2rem;">
         <h1 class="dashboard-title">👥 User Analytics Dashboard</h1>
-        <p class="dashboard-subtitle">Comprehensive insights into organizational user base and activity patterns</p>
+        <p class="dashboard-subtitle">Comprehensive insights into entity user base and activity patterns</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -229,7 +229,7 @@ def show():
         with col3:
             departments = len(df_dept)
             st.markdown(create_metric_card(
-                "Departments", 
+                "Entitys", 
                 departments,
                 f"{(df_dept['Users'].sum()/departments if departments > 0 else 0):.0f} avg users",
                 "No change",
@@ -260,14 +260,14 @@ def show():
         # ======================
         st.markdown('<div class="section-header">User Distribution Analysis</div>', unsafe_allow_html=True)
         
-        tab1, tab2, tab3 = st.tabs(["Department Overview", "User Status", "Demographics"])
+        tab1, tab2, tab3 = st.tabs(["Entity Overview", "User Status", "Demographics"])
         
         with tab1:
             col1, col2 = st.columns([2, 1], gap="medium")
             
             with col1:
                 with st.container():
-                    st.markdown("#### Department Distribution")
+                    st.markdown("#### Entity Distribution")
                     
                     # Create a treemap for department visualization
                     fig_treemap = px.treemap(
@@ -294,7 +294,7 @@ def show():
             
             with col2:
                 with st.container():
-                    st.markdown("#### Top Departments")
+                    st.markdown("#### Top Entitys")
                     
                     # Show top departments in a table with progress bars
                     top_depts = df_dept.sort_values('Users', ascending=False).head(5)
@@ -329,7 +329,7 @@ def show():
                     # Department summary stats
                     st.markdown("""
                     <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #e0e0e0;">
-                        <p style="font-weight: 600; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; color: #2c3e50;">Department Insights</p>
+                        <p style="font-weight: 600; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; color: #2c3e50;">Entity Insights</p>
                         <ul style="margin: 0; padding-left: 1.2rem; color: #7f8c8d; font-size: 0.9rem; font-family: 'Inter', sans-serif;">
                             <li>LM-ABE has the most users (106)</li>
                             <li>TOP has the fewest users (1)</li>

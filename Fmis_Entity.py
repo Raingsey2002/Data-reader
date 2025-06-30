@@ -110,7 +110,7 @@ def FmisEntity():
         <p style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
                   color: {LIGHT_TEXT};
                   font-size: 1rem;">
-            Discover organizational hierarchy with clarity
+            Discover entity hierarchy with clarity
         </p>
     </div>
     """, unsafe_allow_html=True)

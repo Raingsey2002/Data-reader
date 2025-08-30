@@ -117,7 +117,7 @@ def FmisEntity():
 
     # Load the Excel file
     try:
-        df = pd.read_excel('FMIS Entity all CMB.xlsx')
+        df = pd.read_excel('FMIS Entity all CMB01.xlsx')
     except FileNotFoundError:
         st.error("Error: The FMIS Entity data file could not be found.")
         return
@@ -134,31 +134,141 @@ def FmisEntity():
             f"<h3 style='color:{TEXT_COLOR}; margin-bottom: 16px; font-size: 1.25rem;'>Filter Criteria</h3>", 
             unsafe_allow_html=True
         )
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            selected_level = st.selectbox(
-                "National Level:", 
-                sorted(national_levels),
-                help="Select a national level to filter business units",
-                key="national_level_select"
+        col1, col2, col3 = st.columns(3)
+    
+    # with col1:
+    #     selected_level = st.selectbox(
+    #         "Level:", 
+    #         sorted(national_levels),
+    #         help="Select a national level to filter business units",
+    #         key="national_level_select"
+    #     )
+    
+    # if selected_level == "CMB02":
+    #     with col2:
+    #         sub_level = st.selectbox(
+    #             "Sub Level:",
+    #             ["All", "Line Ministry", "Line Department"],
+    #             help="Filter by Line Ministry or Line Department",
+    #             key="sub_level_select"
+    #         )
+    #     with col3:
+    #         search_term = st.text_input(
+    #             "Search Business Units:",
+    #             "",
+    #             help="Type to filter business units by name or code",
+    #             key="business_unit_search"
+    #         )
+    # else:
+    #     sub_level = None
+    #     with col2:
+    #         search_term = st.text_input(
+    #             "Search Business Units:",
+    #             "",
+    #             help="Type to filter business units by name or code",
+    #             key="business_unit_search"
+    #         )
+    with col1:
+        selected_level = st.selectbox(
+            "Level:", 
+            sorted(national_levels),
+            help="Select a national level to filter business units",
+            key="national_level_select"
+        )
+
+    sub_level = None
+    if selected_level == "CMB02":
+        with col2:
+            sub_level = st.selectbox(
+                "National Level:",
+                ["All", "Line Ministry", "Line Department"],
+                help="Filter by Line Ministry or Line Department",
+                key="sub_level_select_cmb02"
             )
-        
+        with col3:
+            search_term = st.text_input(
+                "Search Business Units:",
+                "",
+                help="Type to filter business units by name or code",
+                key="business_unit_search_cmb02"
+            )
+
+    elif selected_level == "CMB03":
+        with col2:
+            sub_level = st.selectbox(
+                "Sub-National Level:",
+                ["All", "Provincial", "District", "Commune"],
+                help="Filter by Provincial, District or Commune",
+                key="sub_level_select_cmb03"
+            )
+        with col3:
+            search_term = st.text_input(
+                "Search Business Units:",
+                "",
+                help="Type to filter business units by name or code",
+                key="business_unit_search_cmb03"
+            )
+
+    else:
         with col2:
             search_term = st.text_input(
                 "Search Business Units:",
                 "",
                 help="Type to filter business units by name or code",
-                key="business_unit_search"
+                key="business_unit_search_default"
             )
+        # with col2:
+        #     search_term = st.text_input(
+        #         "Search Business Units:",
+        #         "",
+        #         help="Type to filter business units by name or code",
+        #         key="business_unit_search"
+        #     )
+
+    # # Filter data based on selections
+    # filtered_df = df[df['National Level'] == selected_level].copy()
+
+    # # Apply second-level filter for CMB02
+    # if selected_level == "CMB02" and sub_level != "All":
+    #     if sub_level == "Line Ministry":
+    #         filtered_df = filtered_df[filtered_df['BUSINESS_UNIT'].str.match(r'^\d|^NT')]
+    #     elif sub_level == "Line Department":
+    #         filtered_df = filtered_df[~filtered_df['BUSINESS_UNIT'].str.match(r'^\d|^NT')]
+    # # Apply search filter if not CMB02
+    # if selected_level != "CMB02" and search_term:
+    #     search_mask = (filtered_df['BUSINESS_UNIT'].str.contains(search_term, case=False)) | \
+    #                 (filtered_df['BU_Description'].str.contains(search_term, case=False))
+    #     filtered_df = filtered_df[search_mask]
 
     # Filter data based on selections
     filtered_df = df[df['National Level'] == selected_level].copy()
-    
+
+    # Apply sub-level filters
+    if selected_level == "CMB02" and sub_level != "All":
+        if sub_level == "Line Ministry":
+            filtered_df = filtered_df[filtered_df['BUSINESS_UNIT'].str.match(r'^\d|^NT')]
+        elif sub_level == "Line Department":
+            filtered_df = filtered_df[~filtered_df['BUSINESS_UNIT'].str.match(r'^\d|^NT')]
+
+    elif selected_level == "CMB03" and sub_level != "All":
+        if sub_level == "Provincial":
+            filtered_df = filtered_df[filtered_df['BUSINESS_UNIT'].str.startswith("P")]
+        elif sub_level == "District":
+            filtered_df = filtered_df[filtered_df['BUSINESS_UNIT'].str.startswith("D")]
+        elif sub_level == "Commune":
+            filtered_df = filtered_df[filtered_df['BUSINESS_UNIT'].str.startswith("C")]
+
+    # Apply search term (always works in all cases)
     if search_term:
         search_mask = (filtered_df['BUSINESS_UNIT'].str.contains(search_term, case=False)) | \
-                     (filtered_df['BU_Description'].str.contains(search_term, case=False))
+                    (filtered_df['BU_Description'].str.contains(search_term, case=False))
         filtered_df = filtered_df[search_mask]
+
+    
+    # if search_term:
+    #     search_mask = (filtered_df['BUSINESS_UNIT'].str.contains(search_term, case=False)) | \
+    #                  (filtered_df['BU_Description'].str.contains(search_term, case=False))
+    #     filtered_df = filtered_df[search_mask]
     
     # Get unique business units
     business_units = filtered_df[['BUSINESS_UNIT', 'BU_Description']].drop_duplicates()

@@ -2,7 +2,13 @@ import streamlit as st
 
 # Set page layout to wide mode (must be the first Streamlit command)
 st.set_page_config(layout="wide")
+import base64
 
+# Read and encode image
+file_path = "Screenshot_2025-09-02_at_3.58.31_in_the_afternoon-removebg-preview.png"
+with open(file_path, "rb") as f:
+    data = f.read()
+encoded = base64.b64encode(data).decode()
 
 import pandas as pd
 
@@ -15,6 +21,11 @@ from Fund_page import Fund
 from Economic_page import Economic
 from program_page import Program
 from Report_page import Report
+
+
+#st.sidebar.image("Screenshot 2025-09-02 at 3.58.31 in the afternoon.png",)
+
+
 
 
 
@@ -91,7 +102,7 @@ def data_reader_page():
         option = st.selectbox(
             "ឆ្នាំ",
             options,
-            index=options.index("2025") if "2025" in options else 0,  # Default to 2025 if available
+            index= 0,  # Default to 2025 if available
             placeholder="Select year...",
         )
 
@@ -209,29 +220,61 @@ def data_reader_page():
     else:
         st.info("No data found for the selected year and search criteria.")
 
-pages = {
-    "App navigation": [
-        st.Page(FmisEntity, title="អង្គភាពការងារ"),
-        st.Page(data_reader_page, title="អង្គភាពប្រតិបត្តិ"),
-        st.Page(Economic,title="មាតិកាគណនី"),
-        st.Page(Program, title="កម្មវិធី"),
-        st.Page(Geography, title="ភូមិសាស្រ្ត"),
-        st.Page(UserAlias, title="អ្នកប្រើប្រាស់"),
-        st.Page(Report, title="របាយការណ៍"),
+# pages = {
+#     "App navigation": [
+#         st.Page(FmisEntity, title="អង្គភាពការងារ"),
+#         st.Page(data_reader_page, title="អង្គភាពប្រតិបត្តិ"),
+#         st.Page(Economic,title="មាតិកាគណនី"),
+#         st.Page(Program, title="កម្មវិធី"),
+#         st.Page(Geography, title="ភូមិសាស្រ្ត"),
+#         st.Page(UserAlias, title="អ្នកប្រើប្រាស់"),
+#         st.Page(Report, title="របាយការណ៍"),
+
+
+# Inject into CSS
+st.markdown(
+    f"""
+    <style>
+    section[data-testid="stSidebar"] > div:before {{
+        content: "";
+        display: block;
+        background-image: url("data:image/png;base64,{encoded}");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        height: 100px;
+        margin-bottom: 15px;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+pages = [
+    st.Page(FmisEntity, title="អង្គភាពការងារ"),
+    st.Page(data_reader_page, title="អង្គភាពប្រតិបត្តិ"),
+    st.Page(Economic, title="មាតិកាគណនី"),
+    st.Page(Program, title="កម្មវិធី"),
+    st.Page(Geography, title="ភូមិសាស្រ្ត"),
+    st.Page(UserAlias, title="អ្នកប្រើប្រាស់"),
+    st.Page(Report, title="របាយការណ៍"),
+
         
 
         #st.Page(Project, title="គម្រោង"),
         #st.Page(Functionpage, title="មុខងារ"),
         #st.Page(Fund, title="មូលនិធិ"),
+     ]    
         
         
         
-        
-    ]
-}
+   
+
 
 
 pg = st.navigation(pages)
+
 pg.run()
 
 

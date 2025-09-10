@@ -49,6 +49,16 @@ st.markdown(
 
 # Define your pages
 def data_reader_page():
+    
+    st.markdown("""
+        <style>
+            .block-container {
+                padding-top: 1rem;
+                padding-bottom: 3rem;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    
     st.markdown(
         """
         <h1 style="text-align: center; color: #1f2937; font-size: 40px; font-weight: bold; padding: 10px font-family: 'Noto Sans Khmer', Arial, sans-serif;">

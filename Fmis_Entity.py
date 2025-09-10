@@ -94,6 +94,17 @@ def FmisEntity():
     </style>
     """, unsafe_allow_html=True)
 
+
+
+    st.markdown("""
+        <style>
+            .block-container {
+                padding-top: 1rem;
+                padding-bottom: 3rem;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
     # Header
     st.markdown(f"""
     <div style="margin-bottom: 2rem;">

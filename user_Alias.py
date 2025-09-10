@@ -14,6 +14,8 @@ import numpy as np
 #     initial_sidebar_state="expanded"
 # )
 
+
+
 def apply_custom_styles():
     """Inject custom CSS for professional styling"""
     st.markdown("""
@@ -173,6 +175,18 @@ def create_metric_card(title, value, subtext=None, delta=None, delta_color="norm
 
 def show():
     """Ultra-professional User Analytics Dashboard"""
+     # 🔹 Remove Streamlit default top padding
+    st.markdown("""
+        <style>
+            .block-container {
+                padding-top: 1rem;
+                padding-bottom: 3rem;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+             
+
+
     apply_custom_styles()
     
     # Premium page header
@@ -204,7 +218,7 @@ def show():
         # ======================
         st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
             total_users = len(df)
@@ -236,24 +250,24 @@ def show():
                 "normal"
             ), unsafe_allow_html=True)
         
-        with col4:
-            if 'Z_CREATEDTTM' in df.columns:
-                try:
-                    df['CREATED_DATE'] = pd.to_datetime(df['Z_CREATEDTTM'], format='%d-%b-%y %I.%M.%S.%f %p', errors='coerce')
-                    new_users = len(df[df['CREATED_DATE'] >= pd.Timestamp.now() - pd.DateOffset(months=1)])
-                    st.markdown(create_metric_card(
-                        "New Users (30d)", 
-                        new_users,
-                        f"{(new_users/total_users*100 if total_users > 0 else 0):.1f}% of total",
-                        f"{(new_users - 15)} vs prev month" if new_users else "N/A",
-                        "positive" if new_users > 15 else "negative" if new_users < 15 else "normal"
-                    ), unsafe_allow_html=True)
-                except:
-                    st.markdown(create_metric_card(
-                        "New Users (30d)", 
-                        "N/A",
-                        "Data unavailable",
-                    ), unsafe_allow_html=True)
+        # with col4:
+        #     if 'Z_CREATEDTTM' in df.columns:
+        #         try:
+        #             df['CREATED_DATE'] = pd.to_datetime(df['Z_CREATEDTTM'], format='%d-%b-%y %I.%M.%S.%f %p', errors='coerce')
+        #             new_users = len(df[df['CREATED_DATE'] >= pd.Timestamp.now() - pd.DateOffset(months=1)])
+        #             st.markdown(create_metric_card(
+        #                 "New Users (30d)", 
+        #                 new_users,
+        #                 f"{(new_users/total_users*100 if total_users > 0 else 0):.1f}% of total",
+        #                 f"{(new_users - 15)} vs prev month" if new_users else "N/A",
+        #                 "positive" if new_users > 15 else "negative" if new_users < 15 else "normal"
+        #             ), unsafe_allow_html=True)
+        #         except:
+        #             st.markdown(create_metric_card(
+        #                 "New Users (30d)", 
+        #                 "N/A",
+        #                 "Data unavailable",
+        #             ), unsafe_allow_html=True)
         
         # ======================
         # USER DISTRIBUTION ANALYSIS
@@ -659,13 +673,12 @@ def show():
                     <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #e0e0e0;">
                         <p style="font-weight: 600; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; color: #2c3e50;">Growth Insights</p>
                         <ul style="margin: 0; padding-left: 1.2rem; color: #7f8c8d; font-size: 0.9rem; font-family: 'Inter', sans-serif;">
-                            <li>Month-over-Month Growth: <strong>{mom_growth:.1f}%</strong></li>
                             <li>Average Monthly New Users: <strong>{monthly_counts['New Users'].mean():.1f}</strong></li>
                             <li>Peak Month: <strong>{monthly_counts.loc[monthly_counts['New Users'].idxmax(), 'YearMonth']}</strong> ({monthly_counts['New Users'].max()} users)</li>
                         </ul>
                     </div>
                     """, unsafe_allow_html=True)
-                
+                # <li>Month-over-Month Growth: <strong>{mom_growth:.1f}%</strong></li>
             except Exception as e:
                 st.error(f"Error processing timeline data: {str(e)}")
         

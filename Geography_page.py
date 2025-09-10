@@ -2721,30 +2721,1154 @@
 
 
 
+# import streamlit as st
+# import pandas as pd
+# import pydeck as pdk
+# from datetime import datetime
+
+# def Geography():
+#     # Custom CSS for professional styling with improved visual hierarchy
+#     st.markdown("""
+#     <style>
+#         :root {
+#             --primary-color: #3498db;
+#             --primary-dark: #2980b9;
+#             --secondary-color: #2c3e50;
+#             --accent-color: #e74c3c;
+#             --success-color: #27ae60;
+#             --light-bg: #f8f9fa;
+#             --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+#             --transition: all 0.3s ease;
+#             --border-radius: 12px;
+#         }
+        
+#         .main {
+#             background-color: var(--light-bg);
+#             font-family: 'Noto Sans Khmer', Arial, sans-serif !important;
+#         }
+        
+#         .stSelectbox, .stTextInput, .stSlider {
+#             background-color: white;
+#             border-radius: var(--border-radius);
+#             box-shadow: var(--card-shadow);
+#             border: 1px solid #e0e0e0;
+#         }
+        
+#         .stTextInput input {
+#             padding: 10px 12px !important;
+#         }
+        
+#         .header-card {
+#             background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-dark) 100%);
+#             color: white;
+#             border-radius: var(--border-radius);
+#             padding: 2.5rem 2rem;
+#             margin-bottom: 2rem;
+#             box-shadow: var(--card-shadow);
+#             border: none;
+#         }
+        
+#         .metric-card {
+#             background: white;
+#             border-radius: var(--border-radius);
+#             padding: 1.5rem;
+#             box-shadow: var(--card-shadow);
+#             transition: var(--transition);
+#             border-left: 4px solid var(--primary-color);
+#             height: 100%;
+#             display: flex;
+#             flex-direction: column;
+#         }
+        
+#         .metric-card:hover {
+#             transform: translateY(-5px);
+#             box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+#         }
+        
+#         .metric-title {
+#             font-size: 0.95rem;
+#             color: #7f8c8d;
+#             margin-bottom: 0.5rem;
+#             font-weight: 500;
+#         }
+        
+#         .metric-value {
+#             font-size: 2rem;
+#             font-weight: 700;
+#             color: var(--secondary-color);
+#             line-height: 1.2;
+#         }
+        
+#         .metric-description {
+#             font-size: 0.85rem;
+#             color: #95a5a6;
+#             margin-top: auto;
+#             padding-top: 0.5rem;
+#         }
+        
+#         .data-card {
+#             background: white;
+#             border-radius: var(--border-radius);
+#             padding: 1.5rem;
+#             margin-bottom: 1.5rem;
+#             box-shadow: var(--card-shadow);
+#             border-left: 4px solid var(--primary-color);
+#             height: 280px;
+#             overflow-y: auto;
+#             transition: var(--transition);
+#         }
+        
+#         .data-card:hover {
+#             box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+#         }
+        
+#         .data-card h4 {
+#             color: var(--secondary-color);
+#             font-size: 1.2rem;
+#             margin-bottom: 1rem;
+#             border-bottom: 1px solid #eee;
+#             padding-bottom: 0.5rem;
+#             font-weight: 600;
+#         }
+        
+#         .data-card p {
+#             margin-bottom: 0.8rem;
+#             font-size: 0.95rem;
+#             line-height: 1.5;
+#         }
+        
+#         .map-container {
+#             border-radius: var(--border-radius);
+#             overflow: hidden;
+#             box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+#             margin-top: 1.5rem;
+#             border: 1px solid #e0e0e0;
+#         }
+        
+#         .tab-content {
+#             padding: 1.5rem 0;
+#         }
+        
+#         .stTabs [data-baseweb="tab-list"] {
+#             gap: 8px;
+#             padding: 0 4px;
+#         }
+        
+#         .stTabs [data-baseweb="tab"] {
+#             background: white;
+#             border-radius: 8px 8px 0 0 !important;
+#             padding: 10px 20px;
+#             transition: var(--transition);
+#             border: 1px solid #e0e0e0;
+#             margin-right: 0 !important;
+#             font-weight: 500;
+#         }
+        
+#         .stTabs [aria-selected="true"] {
+#             background-color: var(--primary-color) !important;
+#             color: white !important;
+#             border-color: var(--primary-dark) !important;
+#         }
+        
+#         .stTabs [aria-selected="false"]:hover {
+#             background-color: #f8f9fa !important;
+#         }
+        
+#         @font-face {
+#             font-family: 'Noto Sans Khmer',;
+#             src: url('https://cdn.jsdelivr.net/gh/googlei18n/noto-fonts@master/phaseIII_only/unhinted/NotoSansKhmer/NotoSansKhmer-Regular.ttf') format('truetype');
+#         }
+        
+#         body {
+#             font-family: 'Noto Sans Khmer', Arial, sans-serif !important;
+#         }
+        
+#         /* Section headers */
+#         .section-header {
+#             color: var(--secondary-color);
+#             border-bottom: 2px solid var(--primary-color);
+#             padding-bottom: 0.5rem;
+#             margin-bottom: 1.5rem;
+#             font-weight: 600;
+#         }
+        
+#         .section-subheader {
+#             color: #7f8c8d;
+#             font-size: 1rem;
+#             margin-top: -1.25rem;
+#             margin-bottom: 1.5rem;
+#         }
+        
+#         /* Custom scrollbar */
+#         ::-webkit-scrollbar {
+#             width: 8px;
+#         }
+        
+#         ::-webkit-scrollbar-track {
+#             background: #f1f1f1;
+#             border-radius: 10px;
+#         }
+        
+#         ::-webkit-scrollbar-thumb {
+#             background: #ccc;
+#             border-radius: 10px;
+#         }
+        
+#         ::-webkit-scrollbar-thumb:hover {
+#             background: #aaa;
+#         }
+        
+#         /* Tooltip styling */
+#         .map-tooltip {
+#             font-family: 'Noto Sans Khmer', Arial, sans-serif !important;
+#             border-radius: var(--border-radius) !important;
+#             box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+#             border: none !important;
+#         }
+        
+#         /* Responsive adjustments */
+#         @media (max-width: 768px) {
+#             .metric-value {
+#                 font-size: 1.5rem;
+#             }
+            
+#             .header-card {
+#                 padding: 1.5rem 1rem;
+#             }
+#         }
+        
+#         /* Loading spinner color */
+#         .stSpinner > div > div {
+#             border-color: var(--primary-color) transparent transparent transparent !important;
+#         }
+#     </style>
+#     """, unsafe_allow_html=True)
+ 
+#      # 🔹 Remove Streamlit default top padding
+#     st.markdown("""
+#         <style>
+#             .block-container {
+#                 padding-top: 1rem;
+#                 padding-bottom: 3rem;
+#             }
+#         </style>
+#     """, unsafe_allow_html=True)
+
+#     # Header with gradient background and improved typography
+#     st.markdown("""
+#      <div style="margin-bottom: 2rem;">
+#        <h1 style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+#                 color: {PRIMARY_COLOR};
+#                 font-weight: 700;
+#                 font-size: 2.2rem;
+#                 margin-bottom: 0.5rem;
+#                 display: inline-block;
+#                 border-bottom: 3px solid {ACCENT_COLOR};
+#                 padding-bottom: 0.5rem;">
+#         🏛️ ភូមិសាស្ត្រ
+#        </h1>
+#         <p style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+#                     color: {LIGHT_TEXT};
+#                     font-size: 1rem;">
+#             ភូមិសាស្ត្រនៃព្រះរាជាណាចក្រកម្ពុជា
+#         </p>
+#     </div>
+#     """, unsafe_allow_html=True)
+
+#     # Create tabs for different views with better spacing
+#     tab1, tab2 = st.tabs(["🗺 ផែនទីខេត្ត & ស្ថិតិ", "📋 ទិន្នន័យលម្អិត"])
+
+#     # Load data with caching
+#     @st.cache_data
+#     def load_data():
+#         file_path = "Geographyfordatareader.xlsx"
+#         df = pd.read_excel(file_path, dtype=str).fillna("")
+#         df['EFFDT'] = pd.to_datetime(df['EFFDT'], errors='coerce')
+#         df['Effective_date'] = df['EFFDT_Year'].astype(str) + '-2025'
+#         df['EFF_STATUS'] = df['EFF_STATUS'].map({'A': 'Active', 'I': 'Inactive'})
+#         df[['Start_Year', 'End_Year']] = df['Effective_date'].str.split('-', expand=True)
+#         df['Start_Year'] = df['Start_Year'].astype(int)
+#         df['End_Year'] = df['End_Year'].astype(int)
+        
+#         # Clean and standardize province names
+#         df['Province_Khmer'] = df['Province_Khmer'].str.strip()
+#         df['Province_English'] = df['Province_English'].str.strip().str.title()
+        
+#         return df
+
+#     df = load_data()
+
+#     # Tab 1: Map and Statistics
+#     with tab1:
+#         # Default filter values
+#         text_search = ""
+#         selected_year = 2025
+#         selected_status = "Active"
+        
+#         # Filter data based on default selections
+#         filtered_df = df[(df['Start_Year'] <= selected_year) & (df['End_Year'] >= selected_year)]
+#         filtered_df = filtered_df[filtered_df['EFF_STATUS'] == selected_status]
+        
+#         # Key Metrics Section with improved cards
+#         if not filtered_df.empty:
+#             st.markdown("""
+#             <div style="margin: 2rem 0 1.5rem 0;">
+#                 <h3 class="section-header">ស្ថិតិសំខាន់ៗ</h3>
+#                 <p class="section-subheader">សូចនាករសំខាន់ៗនៃទិន្នន័យភូមិសាស្ត្រ</p>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             col1, col2, col3 = st.columns(3)
+            
+#             with col1:
+#                 st.markdown(f"""
+#                 <div class="metric-card">
+#                     <div class="metric-title">ចំនួនសរុប</div>
+#                     <div class="metric-value">{len(filtered_df):,}</div>
+#                     <div class="metric-description">ធាតុទិន្នន័យសរុប</div>
+#                 </div>
+#                 """, unsafe_allow_html=True)
+            
+#             with col2:
+#                 st.markdown(f"""
+#                 <div class="metric-card">
+#                     <div class="metric-title">ចំនួនខេត្ត</div>
+#                     <div class="metric-value" style="color: var(--accent-color);">
+#                         {filtered_df['Province_English'].nunique():,}
+#                     </div>
+#                     <div class="metric-description">ខេត្តដែលមានទិន្នន័យ</div>
+#                 </div>
+#                 """, unsafe_allow_html=True)
+            
+#             with col3:
+#                 st.markdown(f"""
+#                 <div class="metric-card">
+#                     <div class="metric-title">ឆ្នាំដែលបានជ្រើសរើស</div>
+#                     <div class="metric-value" style="color: var(--success-color);">
+#                         {selected_year}
+#                     </div>
+#                     <div class="metric-description">ឆ្នាំដែលបានជ្រើសរើស</div>
+#                 </div>
+#                 """, unsafe_allow_html=True)
+            
+        
+            
+#             # Province Distribution Chart with improved layout
+#             st.markdown("---")
+#             st.markdown("""
+#             <div style="margin-bottom: 1.5rem;">
+#                 <h3 class="section-header">ការចែកចាយទិន្នន័យតាមខេត្ត</h3>
+#                 <p class="section-subheader">ខេត្តដែលមានទិន្នន័យច្រើនបំផុត</p>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             top_provinces = filtered_df['Province_English'].value_counts().head(10).reset_index()
+#             top_provinces.columns = ['Province', 'Count']
+            
+#             # Use columns to make the chart responsive
+#             col1, col2 = st.columns([3, 1])
+            
+#             with col1:
+#                 st.bar_chart(
+#                     top_provinces.set_index('Province'),
+#                     height=400,
+#                     use_container_width=True,
+#                     color='#3498db'
+#                 )
+            
+#             with col2:
+#                 st.markdown("""
+#                 <div style="background: white; border-radius: var(--border-radius); padding: 1.25rem; box-shadow: var(--card-shadow); height: 100%;">
+#                     <h4 style="color: var(--secondary-color); margin-top: 0; font-weight: 600;">ខេត្តកំពូល</h4>
+#                     <ol style="padding-left: 1.2rem; margin-top: 1rem;">
+#                 """, unsafe_allow_html=True)
+                
+#                 for i, row in top_provinces.iterrows():
+#                     st.markdown(f"""
+#                     <li style="margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #eee;">
+#                         <span style="font-weight: 500;">{row['Province']}</span>
+#                         <span style="float: right; color: var(--accent-color); font-weight: 600;">{row['Count']:,}</span>
+#                     </li>
+#                     """, unsafe_allow_html=True)
+                
+#                 st.markdown("</ol></div>", unsafe_allow_html=True)
+            
+#             # Interactive Map Visualization with improved styling
+#             st.markdown("---")
+#             st.markdown("""
+#             <div style="margin-bottom: 1.5rem;">
+#                 <h2 class="section-header">ផែនទីខេត្តនៃព្រះរាជាណាចក្រកម្ពុជា</h2>
+#                 <p class="section-subheader">ចុចលើចំណុចនីមួយៗដើម្បីមើលព័ត៌មានលម្អិត</p>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             # Prepare map data
+#             province_df = filtered_df.copy()
+#             province_df['Latitude'] = pd.to_numeric(province_df['Latitude'], errors='coerce')
+#             province_df['Longitude'] = pd.to_numeric(province_df['Longitude'], errors='coerce')
+#             province_df = province_df.dropna(subset=['Latitude', 'Longitude'])
+            
+#             if not province_df.empty:
+#                 # Calculate metrics for the map
+#                 province_counts = province_df['Province_English'].value_counts().reset_index()
+#                 province_counts.columns = ['Province_English', 'count']
+#                 province_df = province_df.merge(province_counts, on='Province_English', how='left')
+#                 province_df['size'] = province_df['count'] * 20
+                
+#                 # Create map layers with improved styling
+#                 layer = pdk.Layer(
+#                     "ScatterplotLayer",
+#                     province_df,
+#                     pickable=True,
+#                     opacity=0.9,
+#                     stroked=True,
+#                     filled=True,
+#                     radius_scale=1,
+#                     radius_min_pixels=10,
+#                     radius_max_pixels=120,
+#                     line_width_min_pixels=1,
+#                     get_position=["Longitude", "Latitude"],
+#                     get_radius="size",
+#                     get_fill_color=[52, 152, 219, 220],  # More opaque blue
+#                     get_line_color=[0, 0, 0, 200],
+#                 )
+
+#                 text_layer = pdk.Layer(
+#                     "TextLayer",
+#                     province_df,
+#                     pickable=False,
+#                     get_position=["Longitude", "Latitude"],
+#                     get_text="Province_Khmer",
+#                     get_size=16,
+#                     get_color=[0, 0, 0, 220],
+#                     get_angle=0,
+#                     get_text_anchor="'middle'",
+#                     get_alignment_baseline="'center'",
+#                 )
+
+#                 view_state = pdk.ViewState(
+#                     latitude=12.5657,
+#                     longitude=104.9910,
+#                     zoom=6.2,
+#                     pitch=0,
+#                 )
+
+#                 # Render the map in a container with improved tooltip
+#                 with st.container():
+#                     st.pydeck_chart(
+#                         pdk.Deck(
+#                             layers=[layer, text_layer],
+#                             initial_view_state=view_state,
+#                             tooltip={
+#                                 "html": """
+#                                 <div class="map-tooltip" style="padding: 12px; font-family: 'Noto Sans Khmer', Arial, sans-serif !important; background: white; border-radius: 8px; max-width: 300px;">
+#                                     <h3 style="margin: 0 0 8px 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 1.1rem;">{Province_Khmer}</h3>
+#                                     <p style="margin: 6px 0; font-size: 0.9rem;"><b>ចំនួនទិន្នន័យ:</b> <span style="color: var(--accent-color); font-weight: 600;">{count}</span></p>
+#                                     <p style="margin: 6px 0; font-size: 0.9rem;"><b>ស្ថានភាព:</b> <span style="color: {color}; font-weight: 500;">{EFF_STATUS}</span></p>
+#                                     <p style="margin: 6px 0 0 0; font-size: 0.85rem; color: #7f8c8d;">ចុចដើម្បីមើលព័ត៌មានលម្អិត</p>
+#                                 </div>
+#                                 """.replace("{color}", "'#27ae60'" if selected_status == "Active" else "'#e74c3c'"),
+#                                 "style": {
+#                                     "fontFamily": "'Noto Sans Khmer', Arial, sans-serif !important",
+#                                     "boxShadow": "0 4px 12px rgba(0,0,0,0.15)"
+#                                 },
+#                             },
+#                             map_style="light",
+#                         ),
+#                         use_container_width=True
+#                     )
+#             else:
+#                 st.warning("No geographic data available for the selected criteria.")
+#         else:
+#             st.info("No data available for the selected filters.")
+
+#     # Tab 2: Detailed Data with improved layout
+#     with tab2:
+#         st.markdown("""
+#         <div style="margin-bottom: 2rem;">
+#             <h2 class="section-header">ទិន្នន័យលម្អិត</h2>
+#             <p class="section-subheader">ព័ត៌មានលម្អិតអំពីភូមិសាស្ត្រកម្ពុជា</p>
+#         </div>
+#         """, unsafe_allow_html=True)
+        
+#         # Filter controls with consistent styling
+#         with st.container():
+#             col1, col2, col3 = st.columns([2, 1, 1])
+            
+#             with col1:
+#                 tab2_text_search = st.text_input(
+#                     "ស្វែងរកពាក្យ (ទិន្នន័យលម្អិត)",
+#                     value="",
+#                     placeholder="ស្វែងរកពាក្យគន្លឹះ...",
+#                     key="tab2_search"
+#                 )
+            
+#             with col2:
+#                 year_options = ("2000", "2023", "2024", "2025")
+#                 tab2_selected_year = st.selectbox(
+#                     "ឆ្នាំ (ទិន្នន័យលម្អិត)",
+#                     year_options,
+#                     index=3,
+#                     key="tab2_year"
+#                 )
+#                 tab2_selected_year = int(tab2_selected_year)
+            
+#             with col3:
+#                 status_options = ("Active", "Inactive")
+#                 tab2_selected_status = st.selectbox(
+#                     "ស្ថានភាព (ទិន្នន័យលម្អិត)",
+#                     status_options,
+#                     index=0,
+#                     key="tab2_status"
+#                 )
+        
+#         # Filter data based on selections
+#         tab2_filtered_df = df[(df['Start_Year'] <= tab2_selected_year) & (df['End_Year'] >= tab2_selected_year)]
+#         tab2_filtered_df = tab2_filtered_df[tab2_filtered_df['EFF_STATUS'] == tab2_selected_status]
+        
+#         if tab2_text_search:
+#             mask1 = tab2_filtered_df["DESCRLONG_KHM"].str.contains(tab2_text_search, case=False, na=False)
+#             mask2 = tab2_filtered_df["PRODUCT"].str.contains(tab2_text_search, case=False, na=False)
+#             tab2_filtered_df = tab2_filtered_df[mask1 | mask2]
+
+#         # Data display with improved cards
+#         if not tab2_filtered_df.empty:
+#             st.markdown(f"""
+#             <div style="background: white; border-radius: var(--border-radius); padding: 1rem 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--card-shadow);">
+#                 <div style="display: flex; justify-content: space-between; align-items: center;">
+#                     <p style="margin: 0; color: var(--secondary-color); font-weight: 500;">
+#                         បានរកឃើញ: <strong style="color: var(--primary-color);">{len(tab2_filtered_df):,}</strong> ធាតុទិន្នន័យ
+#                     </p>
+#                     <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">
+#                         កាលបរិច្ឆេទ: {datetime.now().strftime("%d %B %Y")}
+#                     </p>
+#                 </div>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             # Display filtered results in a responsive grid with improved cards
+#             cols = st.columns(3)
+            
+#             for idx, row in tab2_filtered_df.iterrows():
+#                 with cols[idx % 3]:
+#                     province = str(row['នៅក្រោមខេត្ត']).strip() if pd.notna(row['នៅក្រោមខេត្ត']) else None
+#                     province_text = (
+#                         f"""<p style="margin: 0.5rem 0; font-size: 0.9rem;">
+#                             <span style="color: #7f8c8d;">🏛 ខេត្ត:</span> 
+#                             <span style="color: var(--success-color); font-weight: 500;">{province}</span>
+#                         </p>"""
+#                         if province else ""
+#                     )
+
+#                     status_color = "#27ae60" if row['EFF_STATUS'] == 'Active' else "#e74c3c"
+#                     status_icon = "🟢" if row['EFF_STATUS'] == 'Active' else "🔴"
+                    
+#                     st.markdown(f"""
+#                     <div class="data-card">
+#                         <h4>{row['PRODUCT']}</h4>
+#                         <p style="margin: 0.5rem 0;">
+#                             <span style="color: #7f8c8d;">📅 ឆ្នាំ:</span> 
+#                             <span style="color: var(--primary-color); font-weight: 500;">{row['EFFDT_Year']}-2025</span>
+#                         </p>
+#                         <p style="margin: 0.5rem 0;">
+#                             <span style="color: #7f8c8d;">{status_icon} ស្ថានភាព:</span> 
+#                             <span style="color: {status_color}; font-weight: 500;">
+#                                 {row['EFF_STATUS']}
+#                             </span>
+#                         </p>
+#                         <p style="margin: 0.5rem 0;">
+#                             <span style="color: #7f8c8d;">📖 ពណ៌នា:</span> 
+#                             <span style="color: var(--secondary-color);">
+#                                 {row['DESCRLONG_KHM'][:100]}{'...' if len(row['DESCRLONG_KHM']) > 100 else ''}
+#                             </span>
+#                         </p>
+#                         {province_text}
+#                         <div style="margin-top: 0.5rem; text-align: right;">
+#                             <span style="font-size: 0.8rem; color: #7f8c8d; font-style: italic;">ធាតុទិន្នន័យ #{idx + 1}</span>
+#                         </div>
+#                     </div>
+#                     """, unsafe_allow_html=True)
+#         else:
+#             st.info("No data found for the selected filters.")
+
+# if __name__ == "__main__":
+#     Geography()
+# import streamlit as st
+# import pandas as pd
+# import pydeck as pdk
+# from datetime import datetime
+
+# def Geography():
+#     # Custom CSS for professional styling with improved visual hierarchy
+#     st.markdown("""
+#     <style>
+#         :root {
+#             --primary-color: #1a365d;
+#             --primary-light: #2a4a7f;
+#             --secondary-color: #e53e3e;
+#             --accent-color: #38a169;
+#             --light-bg: #f7fafc;
+#             --card-shadow: 0 4px 6px rgba(0,0,0,0.05);
+#             --transition: all 0.3s ease;
+#             --border-radius: 8px;
+#         }
+        
+#         .main {
+#             background-color: var(--light-bg);
+#             font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+#         }
+        
+#         .stSelectbox, .stTextInput, .stSlider {
+#             background-color: white;
+#             border-radius: var(--border-radius);
+#             box-shadow: var(--card-shadow);
+#             border: 1px solid #e2e8f0;
+#         }
+        
+#         .header-card {
+#             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+#             color: white;
+#             border-radius: var(--border-radius);
+#             padding: 2rem;
+#             margin-bottom: 1.5rem;
+#             box-shadow: var(--card-shadow);
+#         }
+        
+#         .metric-card {
+#             background: white;
+#             border-radius: var(--border-radius);
+#             padding: 1.25rem;
+#             box-shadow: var(--card-shadow);
+#             transition: var(--transition);
+#             border-left: 4px solid var(--primary-color);
+#             height: 100%;
+#             display: flex;
+#             flex-direction: column;
+#         }
+        
+#         .metric-card:hover {
+#             transform: translateY(-3px);
+#             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+#         }
+        
+#         .metric-title {
+#             font-size: 0.85rem;
+#             color: #718096;
+#             margin-bottom: 0.5rem;
+#             font-weight: 500;
+#             text-transform: uppercase;
+#             letter-spacing: 0.5px;
+#         }
+        
+#         .metric-value {
+#             font-size: 1.75rem;
+#             font-weight: 700;
+#             color: var(--primary-color);
+#             line-height: 1.2;
+#         }
+        
+#         .metric-description {
+#             font-size: 0.8rem;
+#             color: #a0aec0;
+#             margin-top: auto;
+#             padding-top: 0.5rem;
+#         }
+        
+#         .data-card {
+#             background: white;
+#             border-radius: var(--border-radius);
+#             padding: 1.25rem;
+#             margin-bottom: 1rem;
+#             box-shadow: var(--card-shadow);
+#             border-left: 4px solid var(--primary-color);
+#             height: 280px;
+#             overflow-y: auto;
+#             transition: var(--transition);
+#         }
+        
+#         .data-card:hover {
+#             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+#         }
+        
+#         .data-card h4 {
+#             color: var(--primary-color);
+#             font-size: 1.1rem;
+#             margin-bottom: 0.75rem;
+#             border-bottom: 1px solid #e2e8f0;
+#             padding-bottom: 0.5rem;
+#             font-weight: 600;
+#         }
+        
+#         .data-card p {
+#             margin-bottom: 0.6rem;
+#             font-size: 0.9rem;
+#             line-height: 1.5;
+#         }
+        
+#         .map-container {
+#             border-radius: var(--border-radius);
+#             overflow: hidden;
+#             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+#             margin-top: 1.5rem;
+#             border: 1px solid #e2e8f0;
+#         }
+        
+#         .tab-content {
+#             padding: 1rem 0;
+#         }
+        
+#         .stTabs [data-baseweb="tab-list"] {
+#             gap: 4px;
+#             padding: 0 2px;
+#         }
+        
+#         .stTabs [data-baseweb="tab"] {
+#             background: white;
+#             border-radius: 6px 6px 0 0;
+#             padding: 8px 16px;
+#             transition: var(--transition);
+#             border: 1px solid #e2e8f0;
+#             margin-right: 0;
+#             font-weight: 500;
+#             font-size: 0.9rem;
+#         }
+        
+#         .stTabs [aria-selected="true"] {
+#             background-color: var(--primary-color);
+#             color: white;
+#             border-color: var(--primary-color);
+#         }
+        
+#         .stTabs [aria-selected="false"]:hover {
+#             background-color: #edf2f7;
+#         }
+        
+#         @font-face {
+#             font-family: 'Noto Sans Khmer';
+#             src: url('https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;500;600;700&display=swap');
+#         }
+        
+#         body {
+#             font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+#         }
+        
+#         /* Section headers */
+#         .section-header {
+#             color: var(--primary-color);
+#             font-size: 1.35rem;
+#             font-weight: 600;
+#             margin-bottom: 0.75rem;
+#         }
+        
+#         .section-subheader {
+#             color: #718096;
+#             font-size: 0.95rem;
+#             margin-bottom: 1.5rem;
+#         }
+        
+#         /* Custom scrollbar */
+#         ::-webkit-scrollbar {
+#             width: 6px;
+#         }
+        
+#         ::-webkit-scrollbar-track {
+#             background: #f1f1f1;
+#             border-radius: 10px;
+#         }
+        
+#         ::-webkit-scrollbar-thumb {
+#             background: #cbd5e0;
+#             border-radius: 10px;
+#         }
+        
+#         ::-webkit-scrollbar-thumb:hover {
+#             background: #a0aec0;
+#         }
+        
+#         /* Tooltip styling */
+#         .map-tooltip {
+#             font-family: 'Noto Sans Khmer', 'Inter', Arial, sans-serif;
+#             border-radius: var(--border-radius);
+#             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+#             border: none;
+#         }
+        
+#         /* Remove Streamlit default top padding */
+#         .block-container {
+#             padding-top: 1rem;
+#             padding-bottom: 2rem;
+#         }
+        
+#         /* Responsive adjustments */
+#         @media (max-width: 768px) {
+#             .metric-value {
+#                 font-size: 1.5rem;
+#             }
+            
+#             .header-card {
+#                 padding: 1.5rem 1rem;
+#             }
+#         }
+        
+#         /* Loading spinner color */
+#         .stSpinner > div > div {
+#             border-color: var(--primary-color) transparent transparent transparent;
+#         }
+#     </style>
+#     """, unsafe_allow_html=True)
+
+#     # Header with gradient background and improved typography
+#     st.markdown("""
+#     <div class="header-card">
+#         <h1 style="font-size: 2rem; margin-bottom: 0.5rem; font-weight: 700;">🏛️ ភូមិសាស្ត្រ</h1>
+#         <p style="font-size: 1rem; margin: 0; opacity: 0.9;">ភូមិសាស្ត្រនៃព្រះរាជាណាចក្រកម្ពុជា</p>
+#     </div>
+#     """, unsafe_allow_html=True)
+
+#     # Create tabs for different views with better spacing
+#     tab1, tab2 = st.tabs(["🗺 ផែនទីខេត្ត & ស្ថិតិ", "📋 ទិន្នន័យលម្អិត"])
+
+#     # Load data with caching
+#     @st.cache_data
+#     def load_data():
+#         file_path = "Geographyfordatareader.xlsx"
+#         df = pd.read_excel(file_path, dtype=str).fillna("")
+#         df['EFFDT'] = pd.to_datetime(df['EFFDT'], errors='coerce')
+#         df['Effective_date'] = df['EFFDT_Year'].astype(str) + '-2025'
+#         df['EFF_STATUS'] = df['EFF_STATUS'].map({'A': 'Active', 'I': 'Inactive'})
+#         df[['Start_Year', 'End_Year']] = df['Effective_date'].str.split('-', expand=True)
+#         df['Start_Year'] = df['Start_Year'].astype(int)
+#         df['End_Year'] = df['End_Year'].astype(int)
+        
+#         # Clean and standardize province names
+#         df['Province_Khmer'] = df['Province_Khmer'].str.strip()
+#         df['Province_English'] = df['Province_English'].str.strip().str.title()
+        
+#         return df
+
+#     df = load_data()
+
+#     # Tab 1: Map and Statistics
+#     with tab1:
+#         # Default filter values
+#         text_search = ""
+#         selected_year = 2025
+#         selected_status = "Active"
+        
+#         # Filter data based on default selections
+#         filtered_df = df[(df['Start_Year'] <= selected_year) & (df['End_Year'] >= selected_year)]
+#         filtered_df = filtered_df[filtered_df['EFF_STATUS'] == selected_status]
+        
+#         # Key Metrics Section with improved cards
+#         if not filtered_df.empty:
+#             st.markdown("""
+#             <div style="margin: 1.5rem 0 1rem 0;">
+#                 <h3 class="section-header">ស្ថិតិសំខាន់ៗ</h3>
+#                 <p class="section-subheader">សូចនាករសំខាន់ៗនៃទិន្នន័យភូមិសាស្ត្រ</p>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             col1, col2, col3 = st.columns(3)
+            
+#             with col1:
+#                 st.markdown(f"""
+#                 <div class="metric-card">
+#                     <div class="metric-title">ចំនួនសរុប</div>
+#                     <div class="metric-value">{len(filtered_df):,}</div>
+#                     <div class="metric-description">ធាតុទិន្នន័យសរុប</div>
+#                 </div>
+#                 """, unsafe_allow_html=True)
+            
+#             with col2:
+#                 st.markdown(f"""
+#                 <div class="metric-card">
+#                     <div class="metric-title">ចំនួនខេត្ត</div>
+#                     <div class="metric-value" style="color: var(--accent-color);">
+#                         {filtered_df['Province_English'].nunique():,}
+#                     </div>
+#                     <div class="metric-description">ខេត្តដែលមានទិន្នន័យ</div>
+#                 </div>
+#                 """, unsafe_allow_html=True)
+            
+#             with col3:
+#                 st.markdown(f"""
+#                 <div class="metric-card">
+#                     <div class="metric-title">ឆ្នាំដែលបានជ្រើសរើស</div>
+#                     <div class="metric-value" style="color: var(--secondary-color);">
+#                         {selected_year}
+#                     </div>
+#                     <div class="metric-description">ឆ្នាំដែលបានជ្រើសរើស</div>
+#                 </div>
+#                 """, unsafe_allow_html=True)
+            
+#             # Province Distribution Chart with improved layout
+#             st.markdown("---")
+#             st.markdown("""
+#             <div style="margin-bottom: 1rem;">
+#                 <h3 class="section-header">ការចែកចាយទិន្នន័យតាមខេត្ត</h3>
+#                 <p class="section-subheader">ខេត្តដែលមានទិន្នន័យច្រើនបំផុត</p>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             top_provinces = filtered_df['Province_English'].value_counts().head(10).reset_index()
+#             top_provinces.columns = ['Province', 'Count']
+            
+#             # Use columns to make the chart responsive
+#             col1, col2 = st.columns([3, 1])
+            
+#             with col1:
+#                 st.bar_chart(
+#                     top_provinces.set_index('Province'),
+#                     height=350,
+#                     use_container_width=True,
+#                     color='#2a4a7f'
+#                 )
+            
+#             with col2:
+#                 st.markdown("""
+#                 <div style="background: white; border-radius: var(--border-radius); padding: 1rem; box-shadow: var(--card-shadow); height: 100%;">
+#                     <h4 style="color: var(--primary-color); margin-top: 0; margin-bottom: 1rem; font-weight: 600; font-size: 1rem;">ខេត្តកំពូល</h4>
+#                     <ol style="padding-left: 1.2rem; margin: 0;">
+#                 """, unsafe_allow_html=True)
+                
+#                 for i, row in top_provinces.iterrows():
+#                     st.markdown(f"""
+#                     <li style="margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #e2e8f0;">
+#                         <span style="font-weight: 500; font-size: 0.9rem;">{row['Province']}</span>
+#                         <span style="float: right; color: var(--accent-color); font-weight: 600;">{row['Count']:,}</span>
+#                     </li>
+#                     """, unsafe_allow_html=True)
+                
+#                 st.markdown("</ol></div>", unsafe_allow_html=True)
+            
+#             # Interactive Map Visualization with improved styling
+#             st.markdown("---")
+#             st.markdown("""
+#             <div style="margin-bottom: 1rem;">
+#                 <h2 class="section-header">ផែនទីខេត្តនៃព្រះរាជាណាចក្រកម្ពុជា</h2>
+#                 <p class="section-subheader">ចុចលើចំណុចនីមួយៗដើម្បីមើលព័ត៌មានលម្អិត</p>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             # Prepare map data
+#             province_df = filtered_df.copy()
+#             province_df['Latitude'] = pd.to_numeric(province_df['Latitude'], errors='coerce')
+#             province_df['Longitude'] = pd.to_numeric(province_df['Longitude'], errors='coerce')
+#             province_df = province_df.dropna(subset=['Latitude', 'Longitude'])
+            
+#             if not province_df.empty:
+#                 # Calculate metrics for the map
+#                 province_counts = province_df['Province_English'].value_counts().reset_index()
+#                 province_counts.columns = ['Province_English', 'count']
+#                 province_df = province_df.merge(province_counts, on='Province_English', how='left')
+#                 province_df['size'] = province_df['count'] * 20
+                
+#                 # Create map layers with improved styling
+#                 layer = pdk.Layer(
+#                     "ScatterplotLayer",
+#                     province_df,
+#                     pickable=True,
+#                     opacity=0.8,
+#                     stroked=True,
+#                     filled=True,
+#                     radius_scale=1,
+#                     radius_min_pixels=8,
+#                     radius_max_pixels=100,
+#                     line_width_min_pixels=1,
+#                     get_position=["Longitude", "Latitude"],
+#                     get_radius="size",
+#                     get_fill_color=[42, 74, 127, 200],
+#                     get_line_color=[0, 0, 0, 150],
+#                 )
+
+#                 text_layer = pdk.Layer(
+#                     "TextLayer",
+#                     province_df,
+#                     pickable=False,
+#                     get_position=["Longitude", "Latitude"],
+#                     get_text="Province_Khmer",
+#                     get_size=14,
+#                     get_color=[0, 0, 0, 200],
+#                     get_angle=0,
+#                     get_text_anchor="'middle'",
+#                     get_alignment_baseline="'center'",
+#                 )
+
+#                 view_state = pdk.ViewState(
+#                     latitude=12.5657,
+#                     longitude=104.9910,
+#                     zoom=6.2,
+#                     pitch=0,
+#                 )
+
+#                 # Render the map in a container with improved tooltip
+#                 with st.container():
+#                     st.pydeck_chart(
+#                         pdk.Deck(
+#                             layers=[layer, text_layer],
+#                             initial_view_state=view_state,
+#                             tooltip={
+#                                 "html": """
+#                                 <div class="map-tooltip" style="padding: 10px; background: white; max-width: 280px;">
+#                                     <h3 style="margin: 0 0 6px 0; color: #1a365d; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; font-size: 1rem;">{Province_Khmer}</h3>
+#                                     <p style="margin: 4px 0; font-size: 0.85rem;"><b>ចំនួនទិន្នន័យ:</b> <span style="color: #38a169; font-weight: 600;">{count}</span></p>
+#                                     <p style="margin: 4px 0; font-size: 0.85rem;"><b>ស្ថានភាព:</b> <span style="color: {color}; font-weight: 500;">{EFF_STATUS}</span></p>
+#                                     <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #718096;">ចុចដើម្បីមើលព័ត៌មានលម្អិត</p>
+#                                 </div>
+#                                 """.replace("{color}", "'#38a169'" if selected_status == "Active" else "'#e53e3e'"),
+#                                 "style": {
+#                                     "fontFamily": "'Noto Sans Khmer', 'Inter', Arial, sans-serif",
+#                                     "boxShadow": "0 4px 12px rgba(0,0,0,0.1)"
+#                                 },
+#                             },
+#                             map_style="light",
+#                         ),
+#                         use_container_width=True
+#                     )
+#             else:
+#                 st.warning("No geographic data available for the selected criteria.")
+#         else:
+#             st.info("No data available for the selected filters.")
+
+#     # Tab 2: Detailed Data with improved layout
+#     with tab2:
+#         st.markdown("""
+#         <div style="margin-bottom: 1.5rem;">
+#             <h2 class="section-header">ទិន្នន័យលម្អិត</h2>
+#             <p class="section-subheader">ព័ត៌មានលម្អិតអំពីភូមិសាស្ត្រកម្ពុជា</p>
+#         </div>
+#         """, unsafe_allow_html=True)
+        
+#         # Filter controls with consistent styling
+#         with st.container():
+#             col1, col2, col3 = st.columns([2, 1, 1])
+            
+#             with col1:
+#                 tab2_text_search = st.text_input(
+#                     "ស្វែងរកពាក្យ (ទិន្នន័យលម្អិត)",
+#                     value="",
+#                     placeholder="ស្វែងរកពាក្យគន្លឹះ...",
+#                     key="tab2_search"
+#                 )
+            
+#             with col2:
+#                 year_options = ("2000", "2023", "2024", "2025")
+#                 tab2_selected_year = st.selectbox(
+#                     "ឆ្នាំ (ទិន្នន័យលម្អិត)",
+#                     year_options,
+#                     index=3,
+#                     key="tab2_year"
+#                 )
+#                 tab2_selected_year = int(tab2_selected_year)
+            
+#             with col3:
+#                 status_options = ("Active", "Inactive")
+#                 tab2_selected_status = st.selectbox(
+#                     "ស្ថានភាព (ទិន្នន័យលម្អិត)",
+#                     status_options,
+#                     index=0,
+#                     key="tab2_status"
+#                 )
+        
+#         # Filter data based on selections
+#         tab2_filtered_df = df[(df['Start_Year'] <= tab2_selected_year) & (df['End_Year'] >= tab2_selected_year)]
+#         tab2_filtered_df = tab2_filtered_df[tab2_filtered_df['EFF_STATUS'] == tab2_selected_status]
+        
+#         if tab2_text_search:
+#             mask1 = tab2_filtered_df["DESCRLONG_KHM"].str.contains(tab2_text_search, case=False, na=False)
+#             mask2 = tab2_filtered_df["PRODUCT"].str.contains(tab2_text_search, case=False, na=False)
+#             tab2_filtered_df = tab2_filtered_df[mask1 | mask2]
+
+#         # Data display with improved cards
+#         if not tab2_filtered_df.empty:
+#             st.markdown(f"""
+#             <div style="background: white; border-radius: var(--border-radius); padding: 1rem; margin-bottom: 1rem; box-shadow: var(--card-shadow);">
+#                 <div style="display: flex; justify-content: space-between; align-items: center;">
+#                     <p style="margin: 0; color: var(--primary-color); font-weight: 500; font-size: 0.95rem;">
+#                         បានរកឃើញ: <strong style="color: var(--accent-color);">{len(tab2_filtered_df):,}</strong> ធាតុទិន្នន័យ
+#                     </p>
+#                     <p style="margin: 0; color: #718096; font-size: 0.85rem;">
+#                         កាលបរិច្ឆេទ: {datetime.now().strftime("%d %B %Y")}
+#                     </p>
+#                 </div>
+#             </div>
+#             """, unsafe_allow_html=True)
+            
+#             # Display filtered results in a responsive grid with improved cards
+#             cols = st.columns(3)
+            
+#             for idx, row in tab2_filtered_df.iterrows():
+#                 with cols[idx % 3]:
+#                     province = str(row['នៅក្រោមខេត្ត']).strip() if pd.notna(row['នៅក្រោមខេត្ត']) else None
+#                     province_text = (
+#                         f"""<p style="margin: 0.4rem 0; font-size: 0.85rem;">
+#                             <span style="color: #718096;">🏛 ខេត្ត:</span> 
+#                             <span style="color: var(--accent-color); font-weight: 500;">{province}</span>
+#                         </p>"""
+#                         if province else ""
+#                     )
+
+#                     status_color = "#38a169" if row['EFF_STATUS'] == 'Active' else "#e53e3c"
+#                     status_icon = "🟢" if row['EFF_STATUS'] == 'Active' else "🔴"
+                    
+#                     st.markdown(f"""
+#                     <div class="data-card">
+#                         <h4>{row['PRODUCT']}</h4>
+#                         <p style="margin: 0.4rem 0;">
+#                             <span style="color: #718096;">📅 ឆ្នាំ:</span> 
+#                             <span style="color: var(--primary-light); font-weight: 500;">{row['EFFDT_Year']}-2025</span>
+#                         </p>
+#                         <p style="margin: 0.4rem 0;">
+#                             <span style="color: #718096;">{status_icon} ស្ថានភាព:</span> 
+#                             <span style="color: {status_color}; font-weight: 500;">
+#                                 {row['EFF_STATUS']}
+#                             </span>
+#                         </p>
+#                         <p style="margin: 0.4rem 0;">
+#                             <span style="color: #718096;">📖 ពណ៌នា:</span> 
+#                             <span style="color: var(--primary-color);">
+#                                 {row['DESCRLONG_KHM'][:100]}{'...' if len(row['DESCRLONG_KHM']) > 100 else ''}
+#                             </span>
+#                         </p>
+#                         {province_text}
+#                         <div style="margin-top: 0.5rem; text-align: right;">
+#                             <span style="font-size: 0.75rem; color: #a0aec0; font-style: italic;">ធាតុទិន្នន័យ #{idx + 1}</span>
+#                         </div>
+#                     </div>
+#                     """, unsafe_allow_html=True)
+#         else:
+#             st.info("No data found for the selected filters.")
+
+# if __name__ == "__main__":
+#     Geography()
+
+
+
 import streamlit as st
 import pandas as pd
 import pydeck as pdk
 from datetime import datetime
 
 def Geography():
-    # Custom CSS for professional styling with improved visual hierarchy
+    # Custom CSS for professional styling
     st.markdown("""
     <style>
         :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
+            --primary-color: #1a73e8;
+            --primary-dark: #0d47a1;
             --secondary-color: #2c3e50;
-            --accent-color: #e74c3c;
+            --accent-color: #e91e63;
             --success-color: #27ae60;
+            --warning-color: #f39c12;
             --light-bg: #f8f9fa;
-            --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            --card-shadow: 0 4px 6px rgba(0,0,0,0.08);
             --transition: all 0.3s ease;
-            --border-radius: 12px;
+            --border-radius: 8px;
         }
         
         .main {
             background-color: var(--light-bg);
-            font-family: 'Noto Sans Khmer', Arial, sans-serif !important;
+            font-family: 'Inter', Arial, sans-serif !important;
         }
         
         .stSelectbox, .stTextInput, .stSlider {
@@ -2754,16 +3878,12 @@ def Geography():
             border: 1px solid #e0e0e0;
         }
         
-        .stTextInput input {
-            padding: 10px 12px !important;
-        }
-        
         .header-card {
-            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-dark) 100%);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
             color: white;
             border-radius: var(--border-radius);
-            padding: 2.5rem 2rem;
-            margin-bottom: 2rem;
+            padding: 2rem 1.5rem;
+            margin-bottom: 1.5rem;
             box-shadow: var(--card-shadow);
             border: none;
         }
@@ -2771,7 +3891,7 @@ def Geography():
         .metric-card {
             background: white;
             border-radius: var(--border-radius);
-            padding: 1.5rem;
+            padding: 1.25rem;
             box-shadow: var(--card-shadow);
             transition: var(--transition);
             border-left: 4px solid var(--primary-color);
@@ -2781,26 +3901,28 @@ def Geography():
         }
         
         .metric-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
         
         .metric-title {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             color: #7f8c8d;
             margin-bottom: 0.5rem;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .metric-value {
-            font-size: 2rem;
+            font-size: 1.75rem;
             font-weight: 700;
             color: var(--secondary-color);
             line-height: 1.2;
         }
         
         .metric-description {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #95a5a6;
             margin-top: auto;
             padding-top: 0.5rem;
@@ -2809,59 +3931,60 @@ def Geography():
         .data-card {
             background: white;
             border-radius: var(--border-radius);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
             box-shadow: var(--card-shadow);
             border-left: 4px solid var(--primary-color);
-            height: 280px;
+            height: 260px;
             overflow-y: auto;
             transition: var(--transition);
         }
         
         .data-card:hover {
-            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
         
         .data-card h4 {
             color: var(--secondary-color);
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
             border-bottom: 1px solid #eee;
             padding-bottom: 0.5rem;
             font-weight: 600;
         }
         
         .data-card p {
-            margin-bottom: 0.8rem;
-            font-size: 0.95rem;
-            line-height: 1.5;
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
         }
         
         .map-container {
             border-radius: var(--border-radius);
             overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            margin-top: 1.5rem;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            margin-top: 1.25rem;
             border: 1px solid #e0e0e0;
         }
         
         .tab-content {
-            padding: 1.5rem 0;
+            padding: 1.25rem 0;
         }
         
         .stTabs [data-baseweb="tab-list"] {
-            gap: 8px;
-            padding: 0 4px;
+            gap: 4px;
+            padding: 0 2px;
         }
         
         .stTabs [data-baseweb="tab"] {
             background: white;
-            border-radius: 8px 8px 0 0 !important;
-            padding: 10px 20px;
+            border-radius: 6px 6px 0 0 !important;
+            padding: 8px 16px;
             transition: var(--transition);
             border: 1px solid #e0e0e0;
             margin-right: 0 !important;
             font-weight: 500;
+            font-size: 0.9rem;
         }
         
         .stTabs [aria-selected="true"] {
@@ -2874,34 +3997,32 @@ def Geography():
             background-color: #f8f9fa !important;
         }
         
-        @font-face {
-            font-family: 'Noto Sans Khmer',;
-            src: url('https://cdn.jsdelivr.net/gh/googlei18n/noto-fonts@master/phaseIII_only/unhinted/NotoSansKhmer/NotoSansKhmer-Regular.ttf') format('truetype');
-        }
-        
-        body {
-            font-family: 'Noto Sans Khmer', Arial, sans-serif !important;
-        }
-        
         /* Section headers */
         .section-header {
             color: var(--secondary-color);
             border-bottom: 2px solid var(--primary-color);
             padding-bottom: 0.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             font-weight: 600;
+            font-size: 1.5rem;
         }
         
         .section-subheader {
             color: #7f8c8d;
-            font-size: 1rem;
-            margin-top: -1.25rem;
-            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            margin-top: -1rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        /* Remove Streamlit default top padding */
+        .block-container {
+            padding-top: 1rem;
+            padding-bottom: 2rem;
         }
         
         /* Custom scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 6px;
         }
         
         ::-webkit-scrollbar-track {
@@ -2920,7 +4041,7 @@ def Geography():
         
         /* Tooltip styling */
         .map-tooltip {
-            font-family: 'Noto Sans Khmer', Arial, sans-serif !important;
+            font-family: 'Inter', Arial, sans-serif !important;
             border-radius: var(--border-radius) !important;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
             border: none !important;
@@ -2933,40 +4054,38 @@ def Geography():
             }
             
             .header-card {
-                padding: 1.5rem 1rem;
+                padding: 1.25rem 1rem;
             }
-        }
-        
-        /* Loading spinner color */
-        .stSpinner > div > div {
-            border-color: var(--primary-color) transparent transparent transparent !important;
         }
     </style>
     """, unsafe_allow_html=True)
 
-    # Header with gradient background and improved typography
+    # Professional header
+    # st.markdown("""
+    # <div>
+    #     <h1 style="margin: 0; font-size: 2rem; font-weight: 700;">🌍 Cambodia Geographic Data</h1>
+    #     <p style="margin: 0.5rem 0 0 0; font-size: 1rem; opacity: 0.9;">
+    #         Comprehensive geographic information system for the Kingdom of Cambodia
+    #     </p>
+    # </div>
+    # """, unsafe_allow_html=True)
+     
     st.markdown("""
-     <div style="margin-bottom: 2rem;">
-       <h1 style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
-                color: {PRIMARY_COLOR};
-                font-weight: 700;
-                font-size: 2.2rem;
-                margin-bottom: 0.5rem;
-                display: inline-block;
-                border-bottom: 3px solid {ACCENT_COLOR};
-                padding-bottom: 0.5rem;">
-        🏛️ ភូមិសាស្ត្រ
-       </h1>
-        <p style="font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
-                    color: {LIGHT_TEXT};
-                    font-size: 1rem;">
-            ភូមិសាស្ត្រនៃព្រះរាជាណាចក្រកម្ពុជា
-        </p>
+    <div style="margin-bottom: 2rem;">
+        <h1 class="dashboard-title">🌍 ភូមិសាស្ត្រ</h1>
+       <p style="font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          color: #7f8c8d;
+          font-size: 1rem;
+          margin-bottom: 2rem;">
+    Comprehensive geographic information system for the Kingdom of Cambodia
+</p>
     </div>
-    """, unsafe_allow_html=True)
+    """, unsafe_allow_html=True) 
 
-    # Create tabs for different views with better spacing
-    tab1, tab2 = st.tabs(["🗺 ផែនទីខេត្ត & ស្ថិតិ", "📋 ទិន្នន័យលម្អិត"])
+
+
+    # Create tabs for different views
+    tab1, tab2 = st.tabs(["🗺️ Map & Analytics", "📊 Detailed Data"])
 
     # Load data with caching
     @st.cache_data
@@ -2991,7 +4110,6 @@ def Geography():
     # Tab 1: Map and Statistics
     with tab1:
         # Default filter values
-        text_search = ""
         selected_year = 2025
         selected_status = "Active"
         
@@ -2999,12 +4117,12 @@ def Geography():
         filtered_df = df[(df['Start_Year'] <= selected_year) & (df['End_Year'] >= selected_year)]
         filtered_df = filtered_df[filtered_df['EFF_STATUS'] == selected_status]
         
-        # Key Metrics Section with improved cards
+        # Key Metrics Section
         if not filtered_df.empty:
             st.markdown("""
-            <div style="margin: 2rem 0 1.5rem 0;">
-                <h3 class="section-header">ស្ថិតិសំខាន់ៗ</h3>
-                <p class="section-subheader">សូចនាករសំខាន់ៗនៃទិន្នន័យភូមិសាស្ត្រ</p>
+            <div style="margin: 1.5rem 0 1rem 0;">
+                <h3 class="section-header">Key Metrics</h3>
+                <p class="section-subheader">Essential indicators from the geographic dataset</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -3013,42 +4131,52 @@ def Geography():
             with col1:
                 st.markdown(f"""
                 <div class="metric-card">
-                    <div class="metric-title">ចំនួនសរុប</div>
+                    <div class="metric-title">Total Records</div>
                     <div class="metric-value">{len(filtered_df):,}</div>
-                    <div class="metric-description">ធាតុទិន្នន័យសរុប</div>
+                    <div class="metric-description">All geographic entries</div>
                 </div>
                 """, unsafe_allow_html=True)
             
             with col2:
                 st.markdown(f"""
                 <div class="metric-card">
-                    <div class="metric-title">ចំនួនខេត្ត</div>
+                    <div class="metric-title">Provinces</div>
                     <div class="metric-value" style="color: var(--accent-color);">
                         {filtered_df['Province_English'].nunique():,}
                     </div>
-                    <div class="metric-description">ខេត្តដែលមានទិន្នន័យ</div>
+                    <div class="metric-description">Covered provinces</div>
                 </div>
                 """, unsafe_allow_html=True)
             
             with col3:
                 st.markdown(f"""
                 <div class="metric-card">
-                    <div class="metric-title">ឆ្នាំដែលបានជ្រើសរើស</div>
+                    <div class="metric-title">Selected Year</div>
                     <div class="metric-value" style="color: var(--success-color);">
                         {selected_year}
                     </div>
-                    <div class="metric-description">ឆ្នាំដែលបានជ្រើសរើស</div>
+                    <div class="metric-description">Data validity period</div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+            # with col4:
+            #     active_percentage = (len(filtered_df) / len(df)) * 100
+            #     st.markdown(f"""
+            #     <div class="metric-card">
+            #         <div class="metric-title">Active Data</div>
+            #         <div class="metric-value" style="color: var(--warning-color);">
+            #             {active_percentage:.1f}%
+            #         </div>
+            #         <div class="metric-description">Active records from total</div>
+            #     </div>
+            #     """, unsafe_allow_html=True)
             
-        
-            
-            # Province Distribution Chart with improved layout
+            # Province Distribution Chart
             st.markdown("---")
             st.markdown("""
-            <div style="margin-bottom: 1.5rem;">
-                <h3 class="section-header">ការចែកចាយទិន្នន័យតាមខេត្ត</h3>
-                <p class="section-subheader">ខេត្តដែលមានទិន្នន័យច្រើនបំផុត</p>
+            <div style="margin-bottom: 1.25rem;">
+                <h3 class="section-header">Provincial Distribution</h3>
+                <p class="section-subheader">Data concentration across provinces</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -3061,21 +4189,21 @@ def Geography():
             with col1:
                 st.bar_chart(
                     top_provinces.set_index('Province'),
-                    height=400,
+                    height=350,
                     use_container_width=True,
-                    color='#3498db'
+                    color='#1a73e8'
                 )
             
             with col2:
                 st.markdown("""
-                <div style="background: white; border-radius: var(--border-radius); padding: 1.25rem; box-shadow: var(--card-shadow); height: 100%;">
-                    <h4 style="color: var(--secondary-color); margin-top: 0; font-weight: 600;">ខេត្តកំពូល</h4>
-                    <ol style="padding-left: 1.2rem; margin-top: 1rem;">
+                <div style="background: white; border-radius: var(--border-radius); padding: 1rem; box-shadow: var(--card-shadow); height: 100%;">
+                    <h4 style="color: var(--secondary-color); margin-top: 0; font-weight: 600; font-size: 1rem;">Top Provinces</h4>
+                    <ol style="padding-left: 1.2rem; margin-top: 0.75rem;">
                 """, unsafe_allow_html=True)
                 
                 for i, row in top_provinces.iterrows():
                     st.markdown(f"""
-                    <li style="margin-bottom: 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px dashed #eee;">
+                    <li style="margin-bottom: 0.6rem; padding-bottom: 0.4rem; border-bottom: 1px dashed #eee; font-size: 0.9rem;">
                         <span style="font-weight: 500;">{row['Province']}</span>
                         <span style="float: right; color: var(--accent-color); font-weight: 600;">{row['Count']:,}</span>
                     </li>
@@ -3083,12 +4211,12 @@ def Geography():
                 
                 st.markdown("</ol></div>", unsafe_allow_html=True)
             
-            # Interactive Map Visualization with improved styling
+            # Interactive Map Visualization
             st.markdown("---")
             st.markdown("""
-            <div style="margin-bottom: 1.5rem;">
-                <h2 class="section-header">ផែនទីខេត្តនៃព្រះរាជាណាចក្រកម្ពុជា</h2>
-                <p class="section-subheader">ចុចលើចំណុចនីមួយៗដើម្បីមើលព័ត៌មានលម្អិត</p>
+            <div style="margin-bottom: 1.25rem;">
+                <h2 class="section-header">Cambodia Province Map</h2>
+                <p class="section-subheader">Click on markers to view detailed information</p>
             </div>
             """, unsafe_allow_html=True)
             
@@ -3105,35 +4233,22 @@ def Geography():
                 province_df = province_df.merge(province_counts, on='Province_English', how='left')
                 province_df['size'] = province_df['count'] * 20
                 
-                # Create map layers with improved styling
+                # Create map layers
                 layer = pdk.Layer(
                     "ScatterplotLayer",
                     province_df,
                     pickable=True,
-                    opacity=0.9,
+                    opacity=0.8,
                     stroked=True,
                     filled=True,
                     radius_scale=1,
-                    radius_min_pixels=10,
-                    radius_max_pixels=120,
+                    radius_min_pixels=8,
+                    radius_max_pixels=100,
                     line_width_min_pixels=1,
                     get_position=["Longitude", "Latitude"],
                     get_radius="size",
-                    get_fill_color=[52, 152, 219, 220],  # More opaque blue
-                    get_line_color=[0, 0, 0, 200],
-                )
-
-                text_layer = pdk.Layer(
-                    "TextLayer",
-                    province_df,
-                    pickable=False,
-                    get_position=["Longitude", "Latitude"],
-                    get_text="Province_Khmer",
-                    get_size=16,
-                    get_color=[0, 0, 0, 220],
-                    get_angle=0,
-                    get_text_anchor="'middle'",
-                    get_alignment_baseline="'center'",
+                    get_fill_color=[26, 115, 232, 200],
+                    get_line_color=[0, 0, 0, 180],
                 )
 
                 view_state = pdk.ViewState(
@@ -3143,24 +4258,24 @@ def Geography():
                     pitch=0,
                 )
 
-                # Render the map in a container with improved tooltip
+                # Render the map
                 with st.container():
                     st.pydeck_chart(
                         pdk.Deck(
-                            layers=[layer, text_layer],
+                            layers=[layer],
                             initial_view_state=view_state,
                             tooltip={
                                 "html": """
-                                <div class="map-tooltip" style="padding: 12px; font-family: 'Noto Sans Khmer', Arial, sans-serif !important; background: white; border-radius: 8px; max-width: 300px;">
-                                    <h3 style="margin: 0 0 8px 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 1.1rem;">{Province_Khmer}</h3>
-                                    <p style="margin: 6px 0; font-size: 0.9rem;"><b>ចំនួនទិន្នន័យ:</b> <span style="color: var(--accent-color); font-weight: 600;">{count}</span></p>
-                                    <p style="margin: 6px 0; font-size: 0.9rem;"><b>ស្ថានភាព:</b> <span style="color: {color}; font-weight: 500;">{EFF_STATUS}</span></p>
-                                    <p style="margin: 6px 0 0 0; font-size: 0.85rem; color: #7f8c8d;">ចុចដើម្បីមើលព័ត៌មានលម្អិត</p>
+                                <div class="map-tooltip" style="padding: 10px; background: white; border-radius: 6px; max-width: 280px;">
+                                    <h3 style="margin: 0 0 6px 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 6px; font-size: 1rem;">{Province_English}</h3>
+                                    <p style="margin: 4px 0; font-size: 0.85rem;"><b>Records:</b> <span style="color: #e91e63; font-weight: 600;">{count}</span></p>
+                                    <p style="margin: 4px 0; font-size: 0.85rem;"><b>Status:</b> <span style="color: {color}; font-weight: 500;">{EFF_STATUS}</span></p>
+                                    <p style="margin: 4px 0 0 0; font-size: 0.8rem; color: #7f8c8d;">Click for more details</p>
                                 </div>
                                 """.replace("{color}", "'#27ae60'" if selected_status == "Active" else "'#e74c3c'"),
                                 "style": {
-                                    "fontFamily": "'Noto Sans Khmer', Arial, sans-serif !important",
-                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.15)"
+                                    "fontFamily": "'Inter', Arial, sans-serif",
+                                    "boxShadow": "0 4px 12px rgba(0,0,0,0.1)"
                                 },
                             },
                             map_style="light",
@@ -3172,31 +4287,31 @@ def Geography():
         else:
             st.info("No data available for the selected filters.")
 
-    # Tab 2: Detailed Data with improved layout
+    # Tab 2: Detailed Data
     with tab2:
         st.markdown("""
-        <div style="margin-bottom: 2rem;">
-            <h2 class="section-header">ទិន្នន័យលម្អិត</h2>
-            <p class="section-subheader">ព័ត៌មានលម្អិតអំពីភូមិសាស្ត្រកម្ពុជា</p>
+        <div style="margin-bottom: 1.5rem;">
+            <h2 class="section-header">Detailed Records</h2>
+            <p class="section-subheader">Comprehensive geographic information for Cambodia</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Filter controls with consistent styling
+        # Filter controls
         with st.container():
             col1, col2, col3 = st.columns([2, 1, 1])
             
             with col1:
                 tab2_text_search = st.text_input(
-                    "ស្វែងរកពាក្យ (ទិន្នន័យលម្អិត)",
+                    "Search records",
                     value="",
-                    placeholder="ស្វែងរកពាក្យគន្លឹះ...",
+                    placeholder="Enter keyword...",
                     key="tab2_search"
                 )
             
             with col2:
                 year_options = ("2000", "2023", "2024", "2025")
                 tab2_selected_year = st.selectbox(
-                    "ឆ្នាំ (ទិន្នន័យលម្អិត)",
+                    "Year",
                     year_options,
                     index=3,
                     key="tab2_year"
@@ -3206,7 +4321,7 @@ def Geography():
             with col3:
                 status_options = ("Active", "Inactive")
                 tab2_selected_status = st.selectbox(
-                    "ស្ថានភាព (ទិន្នន័យលម្អិត)",
+                    "Status",
                     status_options,
                     index=0,
                     key="tab2_status"
@@ -3221,30 +4336,30 @@ def Geography():
             mask2 = tab2_filtered_df["PRODUCT"].str.contains(tab2_text_search, case=False, na=False)
             tab2_filtered_df = tab2_filtered_df[mask1 | mask2]
 
-        # Data display with improved cards
+        # Data display
         if not tab2_filtered_df.empty:
             st.markdown(f"""
-            <div style="background: white; border-radius: var(--border-radius); padding: 1rem 1.5rem; margin-bottom: 1.5rem; box-shadow: var(--card-shadow);">
+            <div style="background: white; border-radius: var(--border-radius); padding: 0.75rem 1.25rem; margin-bottom: 1rem; box-shadow: var(--card-shadow);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <p style="margin: 0; color: var(--secondary-color); font-weight: 500;">
-                        បានរកឃើញ: <strong style="color: var(--primary-color);">{len(tab2_filtered_df):,}</strong> ធាតុទិន្នន័យ
+                    <p style="margin: 0; color: var(--secondary-color); font-weight: 500; font-size: 0.95rem;">
+                        Found: <strong style="color: var(--primary-color);">{len(tab2_filtered_df):,}</strong> records
                     </p>
-                    <p style="margin: 0; color: #7f8c8d; font-size: 0.9rem;">
-                        កាលបរិច្ឆេទ: {datetime.now().strftime("%d %B %Y")}
+                    <p style="margin: 0; color: #7f8c8d; font-size: 0.85rem;">
+                        Date: {datetime.now().strftime("%d %B %Y")}
                     </p>
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
-            # Display filtered results in a responsive grid with improved cards
+            # Display filtered results in a responsive grid
             cols = st.columns(3)
             
             for idx, row in tab2_filtered_df.iterrows():
                 with cols[idx % 3]:
                     province = str(row['នៅក្រោមខេត្ត']).strip() if pd.notna(row['នៅក្រោមខេត្ត']) else None
                     province_text = (
-                        f"""<p style="margin: 0.5rem 0; font-size: 0.9rem;">
-                            <span style="color: #7f8c8d;">🏛 ខេត្ត:</span> 
+                        f"""<p style="margin: 0.4rem 0; font-size: 0.85rem;">
+                            <span style="color: #7f8c8d;">🏛 Province:</span> 
                             <span style="color: var(--success-color); font-weight: 500;">{province}</span>
                         </p>"""
                         if province else ""
@@ -3256,25 +4371,25 @@ def Geography():
                     st.markdown(f"""
                     <div class="data-card">
                         <h4>{row['PRODUCT']}</h4>
-                        <p style="margin: 0.5rem 0;">
-                            <span style="color: #7f8c8d;">📅 ឆ្នាំ:</span> 
+                        <p style="margin: 0.4rem 0;">
+                            <span style="color: #7f8c8d;">📅 Year:</span> 
                             <span style="color: var(--primary-color); font-weight: 500;">{row['EFFDT_Year']}-2025</span>
                         </p>
-                        <p style="margin: 0.5rem 0;">
-                            <span style="color: #7f8c8d;">{status_icon} ស្ថានភាព:</span> 
+                        <p style="margin: 0.4rem 0;">
+                            <span style="color: #7f8c8d;">{status_icon} Status:</span> 
                             <span style="color: {status_color}; font-weight: 500;">
                                 {row['EFF_STATUS']}
                             </span>
                         </p>
-                        <p style="margin: 0.5rem 0;">
-                            <span style="color: #7f8c8d;">📖 ពណ៌នា:</span> 
-                            <span style="color: var(--secondary-color);">
-                                {row['DESCRLONG_KHM'][:100]}{'...' if len(row['DESCRLONG_KHM']) > 100 else ''}
+                        <p style="margin: 0.4rem 0;">
+                            <span style="color: #7f8c8d;">📖 Description:</span> 
+                            <span style="color: var(--secondary-color); font-size: 0.85rem;">
+                                {row['DESCRLONG_KHM'][:90]}{'...' if len(row['DESCRLONG_KHM']) > 90 else ''}
                             </span>
                         </p>
                         {province_text}
-                        <div style="margin-top: 0.5rem; text-align: right;">
-                            <span style="font-size: 0.8rem; color: #7f8c8d; font-style: italic;">ធាតុទិន្នន័យ #{idx + 1}</span>
+                        <div style="margin-top: 0.4rem; text-align: right;">
+                            <span style="font-size: 0.75rem; color: #7f8c8d; font-style: italic;">Record #{idx + 1}</span>
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -3283,6 +4398,3 @@ def Geography():
 
 if __name__ == "__main__":
     Geography()
-
-
- 

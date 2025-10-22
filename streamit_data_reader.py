@@ -21,6 +21,7 @@ from Fund_page import Fund
 from Economic_page import Economic
 from program_page import Program
 from Report_page import Report
+from Supplier_page import Supplier
 
 
 #st.sidebar.image("Screenshot 2025-09-02 at 3.58.31 in the afternoon.png",)
@@ -261,29 +262,51 @@ st.markdown(
 )
 
 
-pages = [
-    st.Page(FmisEntity, title="អង្គភាពការងារ"),
-    st.Page(data_reader_page, title="អង្គភាពប្រតិបត្តិ"),
-    st.Page(Economic, title="មាតិកាគណនី"),
-    st.Page(Program, title="កម្មវិធី"),
-    st.Page(Geography, title="ភូមិសាស្រ្ត"),
-    st.Page(UserAlias, title="អ្នកប្រើប្រាស់"),
-    st.Page(Report, title="របាយការណ៍"),
 
+
+
+
+# pages = [
+#     st.Page(FmisEntity, title="🏛️  អង្គភាពការងារ"),
+#     st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ"),
+#     st.Page(Economic, title="📊  មាតិកាគណនី"),
+#     st.Page(Program, title="📋  កម្មវិធី"),
+#     st.Page(Geography, title="🌍  ភូមិសាស្រ្ត"),
+#     st.Page(UserAlias, title="👤  អ្នកប្រើប្រាស់"),
+#     st.Page(Report, title="📘  របាយការណ៍"),
+#         #st.Page(Project, title="គម្រោង"),
+#         #st.Page(Functionpage, title="មុខងារ"),
+#         #st.Page(Fund, title="មូលនិធិ"),
+#      ]    
+pages = {
+    "Master Data": [
+        st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ"),
+        st.Page(Economic, title="📊  មាតិកាគណនី"),
+        st.Page(Program, title="📋  កម្មវិធី"),
+        st.Page(Geography, title="🌍  ភូមិសាស្រ្ត"),
+    ],
+    "General": [
+         st.Page(FmisEntity, title="🏛️  អង្គភាពការងារ"),
+         st.Page(UserAlias, title="👤  អ្នកប្រើប្រាស់"),
+         st.Page(Report, title="📘  របាយការណ៍"),
+         st.Page(Supplier, title="🚚 អ្នកផ្គត់ផ្គង់"),
+    ],
+}   
         
 
-        #st.Page(Project, title="គម្រោង"),
-        #st.Page(Functionpage, title="មុខងារ"),
-        #st.Page(Fund, title="មូលនិធិ"),
-     ]    
-        
-        
-        
-   
 
 
 
 pg = st.navigation(pages)
+
+# Add sidebar content
+with st.sidebar:
+
+    st.markdown("**About**")
+    st.markdown("រៀបចំ​ និងអភិវឌ្ឍដោយក្រុមការងារការិយាល័យគ្រប់គ្រងព័ត៌មាន")
+    st.markdown("ត្រូវការជំនួយ, សូមទាក់ទងមកកាន់មជ្ឈមណ្ឌលផ្ដល់ព័ត៌មានFMISតាមរយ:(+855)23 430 063 និងតាមបណ្ដាញផ្សេងៗ។")
+
+
 
 pg.run()
 

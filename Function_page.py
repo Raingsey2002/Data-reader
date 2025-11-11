@@ -29,7 +29,7 @@ def Functionpage():
         selected_status = st.selectbox("ស្ថានភាព", status_options, index=0)
 
     # Load Excel file
-    file_path = "Function_df_merged.xlsx"
+    file_path = "Excel files/Function_df_merged.xlsx"
     df = pd.read_excel(file_path, dtype=str).fillna("")
     df = df[['CLASS_FLD', 'Len', 'EFFDT', 'EFFDT_Year', 'EFF_STATUS', 'DESCRLONG_KHM', 'នៅក្រោមមុខងារ']]
 

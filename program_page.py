@@ -22,7 +22,7 @@ def Program():
         unsafe_allow_html=True,
     )
 
-    file_path = "Program for datareader.xlsx"
+    file_path = "Excel files/Program for datareader.xlsx"
     df = pd.read_excel(file_path, dtype=str).fillna("")
 
     # Create layout columns
@@ -121,7 +121,7 @@ def Program():
 
 
     # Display filtered results
-    st.subheader("Filtered Results")
+    st.subheader("លទ្ធផល")
     filtered_df = filtered_df.head(12)
 
     if not filtered_df.empty:

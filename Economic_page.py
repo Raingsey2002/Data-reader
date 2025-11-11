@@ -21,7 +21,7 @@ def Economic():
         unsafe_allow_html=True,
     )
 
-    file_path = "Economic_df_merged.xlsx"
+    file_path = "Excel files/Economic_df_merged.xlsx"
     df = pd.read_excel(file_path, dtype=str).fillna("")
 
     # Create three columns for layout
@@ -131,7 +131,7 @@ def Economic():
     #     filtered_df = filtered_df[mask1 | mask2]
 
     # Display filtered results
-    st.subheader("Filtered Results")
+    st.subheader("លទ្ធផល")
     filtered_df = filtered_df.head(12)
 
     if not filtered_df.empty:

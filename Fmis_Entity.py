@@ -128,7 +128,7 @@ def FmisEntity():
 
     # Load the Excel file
     try:
-        df = pd.read_excel('FMIS Entity all CMB01.xlsx')
+        df = pd.read_excel('Excel files/FMIS Entity all CMB01.xlsx')
     except FileNotFoundError:
         st.error("Error: The FMIS Entity data file could not be found.")
         return

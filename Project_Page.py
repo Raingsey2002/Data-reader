@@ -29,7 +29,7 @@ def Project():
         selected_status = st.selectbox("ស្ថានភាព", status_options, index=0)
 
     # Load Excel file
-    file_path = "Project_dataread.xlsx"
+    file_path = "Excel files/Project_dataread.xlsx"
     df = pd.read_excel(file_path, dtype=str).fillna("")
     #df = df[['PRODUCT', 'Len', 'EFFDT', 'EFFDT_Year', 'EFF_STATUS', 'DESCRLONG_KHM', 'នៅក្រោមខេត្ត']]
 

@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def load_supplier_data():
     # supplier data path
     file_path = "Excel files/Supplier.xlsx"
@@ -69,24 +69,25 @@ def load_supplier_data():
     return df
 
 
-def Supplier():
-    # ---- HIDE STREAMLIT SPINNER / "RUNNING..." ICON ----
-    st.markdown(
-        """
-        <style>
-        /* Hide "Running..." spinner under the title */
-        .stSpinner, .stSpinner > div {
-            display: none !important;
-        }
-        /* Hide the top-right running status widget */
-        [data-testid="stStatusWidget"] {
-            display: none !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+def calculate_percentage_change(current, previous):
+    if previous == 0:
+        return 0  # Avoid division by zero
+    return ((current - previous) / previous) * 100
 
+
+def create_metric_card(title, value, delta, delta_color):
+    """Creates a styled HTML card for a metric."""
+    delta_html = f'<div class="metric-delta" style="color: {delta_color};">{delta}</div>'
+    return f"""
+    <div class="metric-card">
+        <div class="metric-title">{title}</div>
+        <div class="metric-value">{value}</div>
+        {delta_html}
+    </div>
+    """
+
+
+def Supplier():
     # ------------- PAGE STYLES -------------
     st.markdown(
         """
@@ -96,102 +97,47 @@ def Supplier():
             padding-bottom: 2rem;
             max-width: 1400px;
         }
-        .supplier-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0.75rem 0 1rem 0;
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 0.75rem;
-        }
-        .supplier-title {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-        .supplier-logo {
-            width: 40px;
-            height: 40px;
-            border-radius: 999px;
-            background: linear-gradient(135deg, #2563eb, #059669);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
+        .dashboard-title {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2c3e50;
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
         }
-        .supplier-title-text {
-            font-size: 1.6rem;
-            font-weight: 700;
-            color: #111827;
+        .dashboard-subtitle {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #7f8c8d;
+            font-size: 1rem;
+            margin-bottom: 2rem;
         }
-        .supplier-subtitle {
-            font-size: 0.85rem;
-            color: #6b7280;
-        }
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 0.75rem;
-            margin-bottom: 0.75rem;
-        }
-        @media (max-width: 1100px) {
-            .kpi-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-        @media (max-width: 700px) {
-            .kpi-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        .kpi-card {
+        .metric-card {
             background: white;
-            border-radius: 0.75rem;
-            border: 1px solid #e5e7eb;
-            padding: 0.85rem 1rem;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.03);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+            height: 100%;
         }
-        .kpi-label {
-            font-size: 0.75rem;
-            color: #6b7280;
-            margin-bottom: 0.15rem;
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
         }
-        .kpi-value {
-            font-size: 1.4rem;
+        .metric-title {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .metric-value {
+            font-size: 1.8rem;
             font-weight: 700;
-            color: #111827;
-            margin-bottom: 0.15rem;
+            color: #2c3e50;
         }
-        .kpi-trend {
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .kpi-trend-up {
-            color: #059669;
-        }
-        .kpi-trend-down {
-            color: #ea580c;
-        }
-        .filter-bar {
-            background: #f9fafb;
-            border-radius: 0.75rem;
-            border: 1px solid #e5e7eb;
-            padding: 0.8rem 1rem 0.2rem 1rem;
-            margin-bottom: 0.9rem;
-        }
-        .filter-bar-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.4rem;
-        }
-        .filter-bar-title h3 {
-            font-size: 0.95rem;
-            font-weight: 600;
-            margin: 0;
-            color: #111827;
+        .metric-delta {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
         }
         .tabs-header {
             margin-top: 0.5rem;
@@ -209,6 +155,11 @@ def Supplier():
             padding-top: 0.35rem;
             padding-bottom: 0.35rem;
         }
+        /* Custom CSS for smaller Clear filters button */
+        button[data-testid="stButton-clear_filters_button"] {
+            padding: 0.2rem 0.5rem; /* Smaller padding */
+            font-size: 0.7rem; /* Smaller font size */
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -224,6 +175,8 @@ def Supplier():
         st.session_state["supplier_po_type"] = []  # empty = all PO Types
     if "supplier_years" not in st.session_state:
         st.session_state["supplier_years"] = []    # empty = all Years
+    if "supplier_months" not in st.session_state:
+        st.session_state["supplier_months"] = []   # empty = all Months
 
     # If file is missing / empty
     if df.empty:
@@ -231,138 +184,132 @@ def Supplier():
         return
 
     # ------------- HEADER -------------
-    st.markdown(
-        """
-        <div class="supplier-header">
-            <div class="supplier-title">
-                <div class="supplier-logo">FM</div>
-                <div>
-                    <div class="supplier-title-text">Supplier Management Workspace</div>
-                    <div class="supplier-subtitle">PO overview, vendor performance, and comparison dashboard</div>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("""
+    <div style="margin-bottom: 2rem;">
+        <h1 class="dashboard-title">🚚 Supplier Dashboard</h1>
+        <p class="dashboard-subtitle">PO overview, vendor performance, and comparison dashboard</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # ------------- KPI CARDS (from real data) -------------
-    total_vendors = df["Vendor ID"].nunique() if "Vendor ID" in df.columns else 0
-    total_po = len(df)
-    total_amount = df["Amount"].sum() if "Amount" in df.columns else 0
-    avg_po_value = df["Amount"].mean() if "Amount" in df.columns and total_po > 0 else 0
-
-    kpis = [
-        {
-            "label": "Total Vendors",
-            "value": f"{total_vendors:,}",
-            "trend": "+0.0%",
-            "positive": True,
-        },
-        {
-            "label": "Total Purchase Orders",
-            "value": f"{total_po:,}",
-            "trend": "+0.0%",
-            "positive": True,
-        },
-        {
-            "label": "Total PO Amount",
-            "value": f"៛ {total_amount:,.0f}",
-            "trend": "+0.0%",
-            "positive": True,
-        },
-        {
-            "label": "Average PO Value",
-            "value": f"៛ {avg_po_value:,.0f}",
-            "trend": "+0.0%",
-            "positive": False,
-        },
-    ]
-
-    st.markdown('<div class="kpi-grid">', unsafe_allow_html=True)
-    for kpi in kpis:
-        trend_class = "kpi-trend-up" if kpi["positive"] else "kpi-trend-down"
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-label">{kpi['label']}</div>
-                <div class="kpi-value">{kpi['value']}</div>
-                <div class="kpi-trend {trend_class}">{kpi['trend']}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # ------------- FILTER BAR (Business Unit / PO Type / Year) -------------
-    st.markdown(
-        """
-        <div class="filter-bar">
-            <div class="filter-bar-title">
-                <h3>Filters</h3>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    header_col1, header_col2 = st.columns([4, 1])
-    with header_col1:
-        st.caption("Leave filters empty to show all data.")
-
-    with header_col2:
-        clear_clicked = st.button("Clear filters", key="clear_filters")
-
-    # If user clicks clear → reset selections & rerun
-    if clear_clicked:
+    # ------------- FILTER BAR (Business Unit / PO Type / Year / Month) -------------
+    def clear_filters_callback():
         st.session_state["supplier_bu"] = []
         st.session_state["supplier_po_type"] = []
         st.session_state["supplier_years"] = []
-        st.rerun()   # <--- updated for new Streamlit
+        st.session_state["supplier_months"] = []
 
-    # --- Filter widgets ---
-    fcol1, fcol2, fcol3, fcol4 = st.columns([2, 2, 2, 1])
+    # --- Clear button at top right, above the filter box ---
+    clear_button_row_col1, clear_button_row_col2 = st.columns([0.85, 0.15])
+    with clear_button_row_col1:
+        st.markdown("""
+        <div style="background-color: #e0f2f7; border-left: 5px solid #007bff; padding: 5px 10px; border-radius: 3px; display: inline-block;">
+            <p style="font-size: 0.75rem; margin: 0; color: #0056b3;">No filters selected: displaying all available data.</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with clear_button_row_col2:
+        st.button("Clear filters", key="clear_filters_button", on_click=clear_filters_callback)
 
-    with fcol1:
-        bu_options = sorted(df["Business Unit"].astype(str).unique()) if "Business Unit" in df.columns else []
-        selected_bu = st.multiselect(
-            "Business Unit",
-            options=bu_options,
-            key="supplier_bu",
-            placeholder="All business units",
-        )
+    with st.expander("Filters", expanded=True):
+        # --- Filter widgets ---
+        fcol1, fcol2, fcol3, fcol4 = st.columns(4)
 
-    with fcol2:
-        po_type_options = sorted(df["Po Type"].astype(str).unique()) if "Po Type" in df.columns else []
-        selected_po_type = st.multiselect(
-            "PO Type",
-            options=po_type_options,
-            key="supplier_po_type",
-            placeholder="All PO types",
-        )
+        with fcol1:
+            bu_options = sorted(df["Business Unit"].astype(str).unique()) if "Business Unit" in df.columns else []
+            st.multiselect(
+                "Business Unit",
+                options=bu_options,
+                key="supplier_bu",
+                placeholder="All business units",
+            )
 
-    with fcol3:
-        year_options = sorted(df["Year"].astype(str).unique())
-        selected_years = st.multiselect(
-            "Year",
-            options=year_options,
-            key="supplier_years",
-            placeholder="All years",
-        )
+        with fcol2:
+            po_type_options = sorted(df["Po Type"].astype(str).unique()) if "Po Type" in df.columns else []
+            st.multiselect(
+                "PO Type",
+                options=po_type_options,
+                key="supplier_po_type",
+                placeholder="All PO types",
+            )
 
-    with fcol4:
-        st.write("")
-        st.caption("Filters update automatically")
+        with fcol3:
+            year_options = sorted(df["Year"].astype(str).unique())
+            st.multiselect(
+                "Year",
+                options=year_options,
+                key="supplier_years",
+                placeholder="All years",
+            )
+        
+        with fcol4:
+            month_options = sorted(df["Month"].astype(str).unique()) if "Month" in df.columns else []
+            st.multiselect(
+                "Month",
+                options=month_options,
+                key="supplier_months",
+                placeholder="All months",
+            )
 
     # Apply filters
     filtered = df.copy()
 
-    if selected_bu:
-        filtered = filtered[filtered["Business Unit"].astype(str).isin(selected_bu)]
-    if selected_po_type:
-        filtered = filtered[filtered["Po Type"].astype(str).isin(selected_po_type)]
-    if selected_years:
-        filtered = filtered[filtered["Year"].astype(str).isin(selected_years)]
+    if st.session_state["supplier_bu"]:
+        filtered = filtered[filtered["Business Unit"].astype(str).isin(st.session_state["supplier_bu"])]
+    if st.session_state["supplier_po_type"]:
+        filtered = filtered[filtered["Po Type"].astype(str).isin(st.session_state["supplier_po_type"])]
+    if st.session_state["supplier_years"]:
+        filtered = filtered[filtered["Year"].astype(str).isin(st.session_state["supplier_years"])]
+    if st.session_state["supplier_months"]:
+        filtered = filtered[filtered["Month"].astype(str).isin(st.session_state["supplier_months"])]
+
+    # ------------- KPI CARDS (from real data) -------------
+    # Calculate the most recent period and the previous period
+    if not filtered.empty:
+        latest_period = filtered["Period"].max()
+        previous_period = str(int(latest_period.split("-")[0]) - 1) + "-" + latest_period.split("-")[1]
+
+        # Calculate current and previous values for Total Vendors, Total PO Amount, and Average PO Value
+        total_vendors = filtered[filtered["Period"] == latest_period]["Vendor ID"].nunique()
+        prev_total_vendors = df[df["Period"] == previous_period]["Vendor ID"].nunique()
+        total_po_count = filtered[filtered["Period"] == latest_period].shape[0]
+        prev_total_po_count = df[df["Period"] == previous_period].shape[0]
+        total_amount = filtered[filtered["Period"] == latest_period]["Amount"].sum()
+        prev_total_amount = df[df["Period"] == previous_period]["Amount"].sum()
+
+        # Calculate percentage changes
+        vendor_change = calculate_percentage_change(total_vendors, prev_total_vendors)
+        po_count_change = calculate_percentage_change(total_po_count, prev_total_po_count)
+        po_amount_change = calculate_percentage_change(total_amount, prev_total_amount)
+    else:
+        total_vendors, vendor_change = 0, 0
+        total_po_count, po_count_change = 0, 0
+        total_amount, po_amount_change = 0, 0
+        latest_period = "N/A"
+        previous_period = "N/A"
+
+    # Display cards with `st.metric` (showing current values + trends)
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown(create_metric_card(
+            "Total Vendors",
+            f"{total_vendors:,}",
+            f"{vendor_change:+.1f}% vs {previous_period}",
+            "#059669" if vendor_change >= 0 else "#ea580c"
+        ), unsafe_allow_html=True)
+    with col2:
+        st.markdown(create_metric_card(
+            "Total Purchase Orders",
+            f"{total_po_count:,}",
+            f"{po_count_change:+.1f}% vs {previous_period}",
+            "#059669" if po_count_change >= 0 else "#ea580c"
+        ), unsafe_allow_html=True)
+    with col3:
+        st.markdown(create_metric_card(
+            "Total PO Amount",
+            f"៛ {total_amount:,.0f}",
+            f"{po_amount_change:+.1f}% vs {previous_period}",
+            "#059669" if po_amount_change >= 0 else "#ea580c"
+        ), unsafe_allow_html=True)
 
     # ------------- AGGREGATED DATA FOR CHARTS -------------
     # Monthly trend
@@ -389,21 +336,28 @@ def Supplier():
             .agg(Amount=("Amount", "sum"), Vendors=("Vendor ID", "nunique"))
             .reset_index()
             .sort_values("Amount", ascending=False)
+            .head(10)  # Get top 10
         )
     else:
         business_unit_data = pd.DataFrame(columns=["Business Unit", "Amount", "Vendors"])
 
-    # Vendor summary
-    if "Vendor Name" in filtered.columns:
-        vendor_summary = (
-            filtered.groupby("Vendor Name")
-            .agg(Amount=("Amount", "sum"), OUs=("Operating Unit", "nunique"))
+    # Vendor summary for stacked bar chart
+    if "Vendor Name" in filtered.columns and "Po Type" in filtered.columns:
+        # First, find the top 10 vendors by total amount
+        top_vendors_names = filtered.groupby("Vendor Name")["Amount"].sum().nlargest(10).index
+        
+        # Filter the dataframe to only include these top vendors
+        top_vendors_df = filtered[filtered["Vendor Name"].isin(top_vendors_names)]
+        
+        # Now, group by both Vendor Name and Po Type for stacking
+        vendor_po_type_summary = (
+            top_vendors_df.groupby(["Vendor Name", "Po Type"])
+            .agg(Amount=("Amount", "sum"))
             .reset_index()
             .sort_values("Amount", ascending=False)
         )
-        vendor_summary["Status"] = "Active"
     else:
-        vendor_summary = pd.DataFrame(columns=["Vendor Name", "Amount", "OUs", "Status"])
+        vendor_po_type_summary = pd.DataFrame(columns=["Vendor Name", "Po Type", "Amount"])
 
     # ------------- TABS -------------
     st.markdown('<div class="tabs-header"><h4>Views</h4></div>', unsafe_allow_html=True)
@@ -449,7 +403,7 @@ def Supplier():
         c3, c4 = st.columns(2)
 
         with c3:
-            st.subheader("Spending by Business Unit")
+            st.subheader("Top 10 Spending by Business Unit")
             if not business_unit_data.empty:
                 fig_bar = px.bar(
                     business_unit_data,
@@ -463,14 +417,17 @@ def Supplier():
                 st.info("No data for current filters.")
 
         with c4:
-            st.subheader("Top Vendors by Amount")
-            if not vendor_summary.empty:
-                top_vendors = vendor_summary.rename(columns={"Vendor Name": "Vendor"})
-                st.dataframe(
-                    top_vendors[["Vendor", "Amount", "OUs", "Status"]],
-                    use_container_width=True,
-                    height=280,
+            st.subheader("Top 10 Vendors by Amount")
+            if not vendor_po_type_summary.empty:
+                fig_vendor_bar = px.bar(
+                    vendor_po_type_summary,
+                    x="Vendor Name",
+                    y="Amount",
+                    color="Po Type",  # This creates the stacking
+                    labels={"Amount": "Total Amount (៛)", "Vendor Name": "Vendor"},
                 )
+                fig_vendor_bar.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=280)
+                st.plotly_chart(fig_vendor_bar, use_container_width=True)
             else:
                 st.info("No data for current filters.")
 
@@ -497,110 +454,3 @@ def Supplier():
             use_container_width=True,
             height=320,
         )
-
-    # ===== ANALYSIS TAB =====
-    with tab_analysis:
-        st.subheader("Procurement Analytics")
-
-        inner_tab1, inner_tab2, inner_tab3 = st.tabs(["PO Count by BU", "Amount by BU", "Amount by PO Type"])
-
-        with inner_tab1:
-            if "Business Unit" in filtered.columns:
-                tmp = (
-                    filtered.groupby("Business Unit")
-                    .size()
-                    .reset_index(name="PO Count")
-                    .sort_values("PO Count", ascending=False)
-                )
-                fig = px.bar(tmp, x="Business Unit", y="PO Count")
-                fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No data for current filters.")
-
-        with inner_tab2:
-            if "Business Unit" in filtered.columns:
-                tmp = (
-                    filtered.groupby("Business Unit")["Amount"]
-                    .sum()
-                    .reset_index()
-                    .sort_values("Amount", ascending=False)
-                )
-                fig = px.bar(tmp, x="Business Unit", y="Amount", labels={"Amount": "Total Amount (៛)"})
-                fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No data for current filters.")
-
-        with inner_tab3:
-            if "Po Type" in filtered.columns:
-                tmp = (
-                    filtered.groupby("Po Type")["Amount"]
-                    .sum()
-                    .reset_index()
-                    .sort_values("Amount", ascending=False)
-                )
-                fig = px.bar(tmp, x="Po Type", y="Amount", labels={"Amount": "Total Amount (៛)"})
-                fig.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
-                st.plotly_chart(fig, use_container_width=True)
-            else:
-                st.info("No data for current filters.")
-
-        st.markdown("---")
-        st.subheader("Vendor Performance Metrics (placeholder)")
-
-        metrics = [
-            {"metric": "Unique Business Units", "value": df["Business Unit"].nunique(), "trend": ""},
-            {"metric": "Unique Operating Units", "value": df["Operating Unit"].nunique(), "trend": ""},
-            {"metric": "Median PO Amount", "value": f"៛ {df['Amount'].median():,.0f}", "trend": ""},
-        ]
-
-        for m in metrics:
-            st.markdown(
-                f"""
-                <div style="
-                    display:flex;
-                    align-items:center;
-                    justify-content:space-between;
-                    padding:0.55rem 0.75rem;
-                    margin-bottom:0.4rem;
-                    border-radius:0.65rem;
-                    border:1px solid #e5e7eb;
-                    background:white;
-                ">
-                    <div>
-                        <div style="font-size:0.9rem;font-weight:600;color:#111827;">{m['metric']}</div>
-                        <div style="font-size:0.8rem;color:#6b7280;margin-top:0.1rem;">{m['value']}</div>
-                    </div>
-                    <span style="font-size:0.8rem;font-weight:600;color:#059669;">{m['trend']}</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-    # ===== COMPARISON TAB =====
-    with tab_comparison:
-        st.subheader("Vendor Comparison Table")
-
-        if "Vendor Name" in df.columns:
-            comp = (
-                filtered.groupby("Vendor Name")
-                .agg(
-                    PO_Count=("Amount", "size"),
-                    Amount=("Amount", "sum"),
-                    Avg_PO=("Amount", "mean"),
-                )
-                .reset_index()
-                .sort_values("Amount", ascending=False)
-            ).head(15)
-
-            comp["Total Amount"] = comp["Amount"].apply(lambda v: f"៛ {v:,.0f}")
-            comp["Average PO Value"] = comp["Avg_PO"].apply(lambda v: f"៛ {v:,.0f}")
-
-            comp_display = comp.rename(columns={"Vendor Name": "Vendor"})[
-                ["Vendor", "PO_Count", "Total Amount", "Average PO Value"]
-            ]
-
-            st.dataframe(comp_display, use_container_width=True, height=360)
-        else:
-            st.info("Vendor information is not available.")

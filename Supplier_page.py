@@ -5,20 +5,26 @@ import plotly.express as px
 
 @st.cache_data(show_spinner=False)
 def load_supplier_data():
+    """
+    Loads, cleans, and standardizes the supplier data from Excel.
+    """
     # supplier data path
     file_path = "Excel files/Supplier.xlsx"
 
     # Read as text first, then clean/convert
-    df = pd.read_excel(file_path, dtype=str)
+    try:
+        df = pd.read_excel(file_path, dtype=str)
+    except FileNotFoundError:
+        return pd.DataFrame() # Return empty if file not found
 
-    # Strip spaces around column names (your AMOUNT column has spaces)
+    # Strip spaces around column names
     df = df.rename(columns=lambda c: c.strip())
 
-    # Standardize column names for easier use below
+    # Standardize column names
     rename_map = {
         "BUSINESS UNIT": "Business Unit",
         "OPERATING UNIT": "Operating Unit",
-        "PO TYPE": "Po Type",           # name matches usage below
+        "PO TYPE": "Po Type", 
         "ACCOUNT": "Account",
         "VENDOR ID": "Vendor ID",
         "VENDOR DESCR": "Vendor Name",
@@ -26,7 +32,7 @@ def load_supplier_data():
         "MONTH": "Month",
         "YEAR": "Year",
         "AMOUNT": "Amount",
-        "AMOUNT ": "Amount",            # just in case there is a trailing space
+        "AMOUNT ": "Amount",
     }
     df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
@@ -42,42 +48,38 @@ def load_supplier_data():
     else:
         df["Amount"] = 0
 
-    # Parse PO Date
-    if "Po Date" in df.columns:
-        # safeguard in case Excel changed name
-        df["PO Date"] = df["Po Date"]
+    # Parse PO Date and ensure Month/Year columns exist
     if "PO Date" in df.columns:
         df["PO Date"] = pd.to_datetime(df["PO Date"], errors="coerce")
-
-    # Ensure Month / Year as string
-    if "Year" in df.columns:
-        df["Year"] = df["Year"].astype(str)
-    else:
-        df["Year"] = df["PO Date"].dt.year.astype("Int64").astype(str)
-
-    if "Month" in df.columns:
-        df["Month"] = df["Month"].astype(str).str.zfill(2)
-    else:
-        df["Month"] = df["PO Date"].dt.month.astype("Int64").astype(str).str.zfill(2)
+        
+    if "Year" not in df.columns or df["Year"].isna().all():
+        df["Year"] = df["PO Date"].dt.year.astype("Int64").astype(str).fillna('N/A')
+        
+    if "Month" not in df.columns or df["Month"].isna().all():
+        df["Month"] = df["PO Date"].dt.month.astype("Int64").astype(str).str.zfill(2).fillna('00')
 
     # Period (YYYY-MM) for charts
-    if "PO Date" in df.columns:
-        df["Period"] = df["PO Date"].dt.to_period("M").astype(str)
-    else:
-        df["Period"] = df["Year"] + "-" + df["Month"]
-
+    df["Period"] = df["Year"] + "-" + df["Month"]
+    # Filter out invalid periods created by N/A or NaT dates
+    df = df[~df['Period'].str.contains('N/A|00')]
+    
     return df
 
 
 def calculate_percentage_change(current, previous):
+    """Calculates percentage change, handling division by zero."""
     if previous == 0:
-        return 0  # Avoid division by zero
+        return 0
     return ((current - previous) / previous) * 100
 
 
-def create_metric_card(title, value, delta, delta_color):
-    """Creates a styled HTML card for a metric."""
-    delta_html = f'<div class="metric-delta" style="color: {delta_color};">{delta}</div>'
+def create_metric_card(title, value, delta=None, delta_color=None):
+    """Creates a styled HTML card for a metric (used for the initial KPIs)."""
+    # NOTE: This function is not used in the final version of the PO Type Breakdown
+    # but kept here for potential future use or consistency with original structure.
+    delta_html = ""
+    if delta is not None:
+        delta_html = f'<div class="metric-delta" style="color: {delta_color};">{delta}</div>'
     return f"""
     <div class="metric-card">
         <div class="metric-title">{title}</div>
@@ -92,6 +94,7 @@ def Supplier():
     st.markdown(
         """
         <style>
+        /* General Layout */
         .block-container {
             padding-top: 1rem;
             padding-bottom: 2rem;
@@ -110,6 +113,8 @@ def Supplier():
             font-size: 1rem;
             margin-bottom: 2rem;
         }
+
+        /* KPI Card Styling (Used at the top) */
         .metric-card {
             background: white;
             border-radius: 8px;
@@ -117,7 +122,8 @@ def Supplier():
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             border: 1px solid #e0e0e0;
             transition: all 0.3s ease;
-            height: 100%;
+            height: 120px;
+            overflow: hidden;
         }
         .metric-card:hover {
             transform: translateY(-3px);
@@ -133,12 +139,11 @@ def Supplier():
             font-size: 1.8rem;
             font-weight: 700;
             color: #2c3e50;
+            word-wrap: break-word;
         }
-        .metric-delta {
-            font-size: 0.85rem;
-            font-weight: 500;
-            margin-top: 0.5rem;
-        }
+
+
+        /* Tabs and Buttons */
         .tabs-header {
             margin-top: 0.5rem;
             margin-bottom: 0.1rem;
@@ -155,10 +160,9 @@ def Supplier():
             padding-top: 0.35rem;
             padding-bottom: 0.35rem;
         }
-        /* Custom CSS for smaller Clear filters button */
         button[data-testid="stButton-clear_filters_button"] {
-            padding: 0.2rem 0.5rem; /* Smaller padding */
-            font-size: 0.7rem; /* Smaller font size */
+            padding: 0.2rem 0.5rem;
+            font-size: 0.7rem;
         }
         </style>
         """,
@@ -170,29 +174,30 @@ def Supplier():
 
     # ---------- FILTER SESSION STATE ----------
     if "supplier_bu" not in st.session_state:
-        st.session_state["supplier_bu"] = []       # empty = all BUs
+        st.session_state["supplier_bu"] = []
     if "supplier_po_type" not in st.session_state:
-        st.session_state["supplier_po_type"] = []  # empty = all PO Types
+        st.session_state["supplier_po_type"] = []
     if "supplier_years" not in st.session_state:
-        st.session_state["supplier_years"] = []    # empty = all Years
+        st.session_state["supplier_years"] = []
     if "supplier_months" not in st.session_state:
-        st.session_state["supplier_months"] = []   # empty = all Months
+        st.session_state["supplier_months"] = []
 
     # If file is missing / empty
     if df.empty:
-        st.error("No data found for Supplier. Please check the Excel file path.")
+        st.error("No data found for Supplier. Please check the Excel file path or content.")
         return
 
     # ------------- HEADER -------------
     st.markdown("""
     <div style="margin-bottom: 2rem;">
-        <h1 class="dashboard-title">🚚 Supplier Dashboard</h1>
+        <h1 class="dashboard-title">🚚 អ្នកផ្គត់ផ្គង់ - Supplier</h1>
         <p class="dashboard-subtitle">PO overview, vendor performance, and comparison dashboard</p>
     </div>
     """, unsafe_allow_html=True)
 
     # ------------- FILTER BAR (Business Unit / PO Type / Year / Month) -------------
     def clear_filters_callback():
+        """Callback to reset all filter session states."""
         st.session_state["supplier_bu"] = []
         st.session_state["supplier_po_type"] = []
         st.session_state["supplier_years"] = []
@@ -200,10 +205,24 @@ def Supplier():
 
     # --- Clear button at top right, above the filter box ---
     clear_button_row_col1, clear_button_row_col2 = st.columns([0.85, 0.15])
+    
+    is_filtered = any([st.session_state["supplier_bu"], 
+                        st.session_state["supplier_po_type"], 
+                        st.session_state["supplier_years"], 
+                        st.session_state["supplier_months"]])
+
+    if is_filtered:
+        message = "Active filters applied."
+        style = "background-color: #ffe0e0; border-left: 5px solid #dc3545; color: #dc3545;"
+    else:
+        message = "No filters selected: displaying all available data."
+        style = "background-color: #e0f2f7; border-left: 5px solid #007bff; color: #0056b3;"
+
+
     with clear_button_row_col1:
-        st.markdown("""
-        <div style="background-color: #e0f2f7; border-left: 5px solid #007bff; padding: 5px 10px; border-radius: 3px; display: inline-block;">
-            <p style="font-size: 0.75rem; margin: 0; color: #0056b3;">No filters selected: displaying all available data.</p>
+        st.markdown(f"""
+        <div style="{style} padding: 5px 10px; border-radius: 3px; display: inline-block;">
+            <p style="font-size: 0.75rem; margin: 0;">{message}</p>
         </div>
         """, unsafe_allow_html=True)
     with clear_button_row_col2:
@@ -232,7 +251,7 @@ def Supplier():
             )
 
         with fcol3:
-            year_options = sorted(df["Year"].astype(str).unique())
+            year_options = sorted(df["Year"].astype(str).unique(), reverse=True)
             st.multiselect(
                 "Year",
                 options=year_options,
@@ -241,6 +260,7 @@ def Supplier():
             )
         
         with fcol4:
+            # Ensure months are sorted numerically for the selector
             month_options = sorted(df["Month"].astype(str).unique()) if "Month" in df.columns else []
             st.multiselect(
                 "Month",
@@ -262,195 +282,352 @@ def Supplier():
         filtered = filtered[filtered["Month"].astype(str).isin(st.session_state["supplier_months"])]
 
     # ------------- KPI CARDS (from real data) -------------
-    # Calculate the most recent period and the previous period
     if not filtered.empty:
-        latest_period = filtered["Period"].max()
-        previous_period = str(int(latest_period.split("-")[0]) - 1) + "-" + latest_period.split("-")[1]
-
-        # Calculate current and previous values for Total Vendors, Total PO Amount, and Average PO Value
-        total_vendors = filtered[filtered["Period"] == latest_period]["Vendor ID"].nunique()
-        prev_total_vendors = df[df["Period"] == previous_period]["Vendor ID"].nunique()
-        total_po_count = filtered[filtered["Period"] == latest_period].shape[0]
-        prev_total_po_count = df[df["Period"] == previous_period].shape[0]
-        total_amount = filtered[filtered["Period"] == latest_period]["Amount"].sum()
-        prev_total_amount = df[df["Period"] == previous_period]["Amount"].sum()
-
-        # Calculate percentage changes
-        vendor_change = calculate_percentage_change(total_vendors, prev_total_vendors)
-        po_count_change = calculate_percentage_change(total_po_count, prev_total_po_count)
-        po_amount_change = calculate_percentage_change(total_amount, prev_total_amount)
+        total_spending = filtered["Amount"].sum()
+        total_pos = len(filtered)
+        vendor_count = filtered["Vendor ID"].nunique() if "Vendor ID" in filtered.columns else 0
+        bu_count = filtered["Business Unit"].nunique() if "Business Unit" in filtered.columns else 0
     else:
-        total_vendors, vendor_change = 0, 0
-        total_po_count, po_count_change = 0, 0
-        total_amount, po_amount_change = 0, 0
-        latest_period = "N/A"
-        previous_period = "N/A"
+        total_spending, total_pos, vendor_count, bu_count = 0, 0, 0, 0
 
-    # Display cards with `st.metric` (showing current values + trends)
-    col1, col2, col3 = st.columns(3)
-
+    # Display cards with custom HTML
+    col1, col2, col3, col4 = st.columns([1, 1, 1, 2])
     with col1:
-        st.markdown(create_metric_card(
-            "Total Vendors",
-            f"{total_vendors:,}",
-            f"{vendor_change:+.1f}% vs {previous_period}",
-            "#059669" if vendor_change >= 0 else "#ea580c"
-        ), unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Business Units</div>
+            <div class="metric-value">{bu_count:,}</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col2:
-        st.markdown(create_metric_card(
-            "Total Purchase Orders",
-            f"{total_po_count:,}",
-            f"{po_count_change:+.1f}% vs {previous_period}",
-            "#059669" if po_count_change >= 0 else "#ea580c"
-        ), unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Vendor Count</div>
+            <div class="metric-value">{vendor_count:,}</div>
+        </div>
+        """, unsafe_allow_html=True)
     with col3:
-        st.markdown(create_metric_card(
-            "Total PO Amount",
-            f"៛ {total_amount:,.0f}",
-            f"{po_amount_change:+.1f}% vs {previous_period}",
-            "#059669" if po_amount_change >= 0 else "#ea580c"
-        ), unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Total POs</div>
+            <div class="metric-value">{total_pos:,}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-title">Total Spending Amount</div>
+            <div class="metric-value">៛ {total_spending:,.0f}</div>
+        </div>
+        """, unsafe_allow_html=True)
 
     # ------------- AGGREGATED DATA FOR CHARTS -------------
-    # Monthly trend
-    po_data = (
-        filtered.groupby("Period", as_index=False)
-        .agg(Amount=("Amount", "sum"), PO_Count=("Amount", "size"))
-        .sort_values("Period")
-    )
-
     # PO by Type
     if "Po Type" in filtered.columns:
-        po_type_data = (
-            filtered.groupby("Po Type", as_index=False)
-            .agg(Amount=("Amount", "sum"))
-            .sort_values("Amount", ascending=False)
-        )
+        po_type_data = filtered.groupby("Po Type", as_index=False).agg(Amount=("Amount", "sum")).sort_values("Amount", ascending=False)
     else:
         po_type_data = pd.DataFrame(columns=["Po Type", "Amount"])
 
     # Spending by Business Unit
     if "Business Unit" in filtered.columns:
-        business_unit_data = (
-            filtered.groupby("Business Unit")
-            .agg(Amount=("Amount", "sum"), Vendors=("Vendor ID", "nunique"))
-            .reset_index()
-            .sort_values("Amount", ascending=False)
-            .head(10)  # Get top 10
-        )
+        business_unit_data = filtered.groupby("Business Unit").agg(Amount=("Amount", "sum")).reset_index().sort_values("Amount", ascending=False)
     else:
-        business_unit_data = pd.DataFrame(columns=["Business Unit", "Amount", "Vendors"])
+        business_unit_data = pd.DataFrame(columns=["Business Unit", "Amount"])
 
-    # Vendor summary for stacked bar chart
-    if "Vendor Name" in filtered.columns and "Po Type" in filtered.columns:
-        # First, find the top 10 vendors by total amount
-        top_vendors_names = filtered.groupby("Vendor Name")["Amount"].sum().nlargest(10).index
-        
-        # Filter the dataframe to only include these top vendors
-        top_vendors_df = filtered[filtered["Vendor Name"].isin(top_vendors_names)]
-        
-        # Now, group by both Vendor Name and Po Type for stacking
-        vendor_po_type_summary = (
-            top_vendors_df.groupby(["Vendor Name", "Po Type"])
-            .agg(Amount=("Amount", "sum"))
-            .reset_index()
-            .sort_values("Amount", ascending=False)
-        )
+    # Top 5 Vendors
+    if "Vendor Name" in filtered.columns:
+        top_5_vendors = filtered.groupby("Vendor Name")["Amount"].sum().nlargest(5).reset_index()
     else:
-        vendor_po_type_summary = pd.DataFrame(columns=["Vendor Name", "Po Type", "Amount"])
+        top_5_vendors = pd.DataFrame(columns=["Vendor Name", "Amount"])
+
+    # Monthly trend
+    po_data = filtered.groupby("Period", as_index=False).agg(Amount=("Amount", "sum")).sort_values("Period")
 
     # ------------- TABS -------------
     st.markdown('<div class="tabs-header"><h4>Views</h4></div>', unsafe_allow_html=True)
-    tab_overview, tab_analysis, tab_comparison = st.tabs(
-        ["📊 Overview", "📈 Detailed Analysis", "⚖️ Vendor Comparison"]
+    tab_overview, tab_analysis, tab_vendor = st.tabs(
+        ["📊 Overview ", "📈 Detailed Analysis", "⚖️ Vendors & Performance"]
     )
 
-    # ===== OVERVIEW TAB =====
+    # ===== OVERVIEW & TRANSACTIONS TAB =====
     with tab_overview:
+        # --- Key Distribution Charts ---
         c1, c2 = st.columns(2)
-
         with c1:
-            st.subheader("Monthly PO Trends")
-            if not po_data.empty:
-                fig_line = px.line(
-                    po_data,
-                    x="Period",
-                    y="Amount",
-                    markers=True,
-                    labels={"Amount": "PO Amount (៛)", "Period": "Period (YYYY-MM)"},
+            st.subheader("Distribution by PO Type")
+            if not po_type_data.empty:
+                fig_pie_type = px.pie(
+                    po_type_data, 
+                    names="Po Type", 
+                    values="Amount", 
+                    hole=0.4, 
+                    title="Spending by PO Type"
                 )
-                fig_line.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
-                st.plotly_chart(fig_line, use_container_width=True)
+                fig_pie_type.update_traces(textinfo='percent+label')
+                fig_pie_type.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=300, showlegend=True)
+                st.plotly_chart(fig_pie_type, use_container_width=True)
             else:
-                st.info("No data for current filters.")
+                st.info("No data for PO types.")
 
         with c2:
-            st.subheader("PO by Type")
-            if not po_type_data.empty:
-                fig_pie = px.pie(
-                    po_type_data,
-                    names="Po Type",
-                    values="Amount",
-                    hole=0.4,
-                )
-                fig_pie.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=320)
-                st.plotly_chart(fig_pie, use_container_width=True)
-            else:
-                st.info("No data for current filters.")
+            st.subheader("Distribution by Business Unit")
 
-        st.markdown("---")
-
-        c3, c4 = st.columns(2)
-
-        with c3:
-            st.subheader("Top 10 Spending by Business Unit")
             if not business_unit_data.empty:
-                fig_bar = px.bar(
+                fig_bu_bar = px.bar(
                     business_unit_data,
                     x="Business Unit",
                     y="Amount",
-                    labels={"Amount": "Total Amount (៛)"},
+                    labels={
+                        "Business Unit": "Business Unit",
+                        "Amount": "Total Amount (៛)"
+                    },
+                    title="Spending by Business Unit ",
                 )
-                fig_bar.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=280)
-                st.plotly_chart(fig_bar, use_container_width=True)
+
+                # Make the chart tall enough + very wide → page becomes horizontally scrollable
+                chart_width = max(800, len(business_unit_data) * 100) # Dynamic width
+                fig_bu_bar.update_layout(
+                    height=400,
+                    width=chart_width,
+                    margin=dict(l=10, r=10, t=40, b=120),
+                    xaxis_tickangle=-45
+                )
+
+                st.plotly_chart(fig_bu_bar, use_container_width=False)
             else:
-                st.info("No data for current filters.")
+                st.info("No data for business units.")
+
+        
+        st.markdown("---")
+
+        # --- Top 5 Vendors and Monthly Trend ---
+        c3, c4 = st.columns(2)
+        with c3:
+            st.subheader("Top 5 Vendors by Amount")
+            if not top_5_vendors.empty:
+                fig_bar_vendor = px.bar(
+                    top_5_vendors, 
+                    x="Vendor Name", 
+                    y="Amount", 
+                    labels={"Amount": "Total Amount (៛)"},
+                    title="Top Vendors by Spending"
+                )
+                fig_bar_vendor.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=320)
+                st.plotly_chart(fig_bar_vendor, use_container_width=True)
+            else:
+                st.info("No data for vendors.")
 
         with c4:
-            st.subheader("Top 10 Vendors by Amount")
-            if not vendor_po_type_summary.empty:
-                fig_vendor_bar = px.bar(
-                    vendor_po_type_summary,
-                    x="Vendor Name",
-                    y="Amount",
-                    color="Po Type",  # This creates the stacking
-                    labels={"Amount": "Total Amount (៛)", "Vendor Name": "Vendor"},
+            st.subheader("Monthly Spending Trend")
+            if not po_data.empty:
+                fig_area = px.area(
+                    po_data, 
+                    x="Period", 
+                    y="Amount", 
+                    markers=True, 
+                    labels={"Amount": "PO Amount (៛)", "Period": "Period (YYYY-MM)"},
+                    title="Total Spending Over Time"
                 )
-                fig_vendor_bar.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=280)
-                st.plotly_chart(fig_vendor_bar, use_container_width=True)
+                fig_area.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=320)
+                st.plotly_chart(fig_area, use_container_width=True)
             else:
-                st.info("No data for current filters.")
+                st.info("No data for monthly trends.")
 
         st.markdown("---")
-        st.subheader("Purchase Order Details")
+
+        # --- Transactions Table ---
+        st.subheader("Suppiler Detail Table")
         display_cols = [
-            c
-            for c in [
-                "Business Unit",
-                "Operating Unit",
-                "Po Type",
-                "Account",
-                "Vendor ID",
-                "Vendor Name",
-                "PO Date",
-                "Month",
-                "Year",
-                "Amount",
-            ]
-            if c in filtered.columns
+            c for c in [
+                "Business Unit", "Operating Unit", "Po Type", "Account", 
+                "Vendor ID", "Vendor Name", "PO Date", "Month", "Year", "Amount"
+            ] if c in filtered.columns
         ]
+        
+        # Format 'Amount' column for display
+        display_df = filtered[display_cols].copy()
+        display_df['Amount'] = display_df['Amount'].apply(lambda x: f"៛ {x:,.0f}")
+        
         st.dataframe(
-            filtered[display_cols].sort_values("Amount", ascending=False),
+            display_df.sort_values(by="Amount", ascending=False), # Note: sorting on formatted string might be imperfect
             use_container_width=True,
             height=320,
         )
+
+    # ===== DETAILED ANALYSIS TAB =====
+    with tab_analysis:
+        if "Po Type" in filtered.columns and not filtered.empty:
+            po_type_analysis = filtered.groupby("Po Type").agg(
+                Total_Amount=("Amount", "sum"),
+                Number_of_POs=("Amount", "count"),
+                Average_PO_Value=("Amount", "mean")
+            ).reset_index()
+            # PO Type Comparison Bar Chart
+            st.subheader("PO Type Comparison")
+            # Separate the metrics for plotting
+            po_type_analysis_melted = pd.melt(
+                po_type_analysis, 
+                id_vars='Po Type', 
+                value_vars=['Number_of_POs', 'Total_Amount', 'Average_PO_Value'],
+                var_name='Metric',
+                value_name='Value'
+            )
+            
+            # Create two separate charts for scale readability
+            c_count, c_amount = st.columns(2)
+            
+            with c_count:
+                count_data = po_type_analysis_melted[po_type_analysis_melted['Metric'] == 'Number_of_POs']
+                fig_count_compare = px.bar(
+                    count_data,
+                    x="Po Type",
+                    y="Value",
+                    labels={"Value": "Number of POs"},
+                    title="PO Count by Type",
+                    color="Po Type"
+                )
+                fig_count_compare.update_layout(showlegend=False, margin=dict(t=40))
+                st.plotly_chart(fig_count_compare, use_container_width=True)
+            
+            with c_amount:
+                amount_data = po_type_analysis_melted[po_type_analysis_melted['Metric'] == 'Total_Amount']
+                fig_amount_compare = px.bar(
+                    amount_data,
+                    x="Po Type",
+                    y="Value",
+                    labels={"Value": "Total Amount (៛)"},
+                    title="Total Amount by PO Type",
+                    color="Po Type"
+                )
+                fig_amount_compare.update_layout(showlegend=False, margin=dict(t=40))
+                st.plotly_chart(fig_amount_compare, use_container_width=True)
+
+        else:
+            st.info("No PO Type data to analyze.")
+
+        st.markdown("---")
+
+        st.subheader("Business Unit Analysis")
+        if "Business Unit" in filtered.columns and not filtered.empty:
+            # Business Unit Performance Grid
+            top_vendor_per_bu = filtered.groupby(['Business Unit', 'Vendor Name'])['Amount'].sum().reset_index()
+            # Find the index of the max amount for each Business Unit
+            idx = top_vendor_per_bu.groupby('Business Unit')['Amount'].idxmax()
+            top_vendor_per_bu = top_vendor_per_bu.loc[idx]
+            
+            bu_performance = filtered.groupby("Business Unit").agg(
+                Total_Amount_Spent=("Amount", "sum"),
+                PO_Count=("Amount", "count"),
+                Average_PO_Value=("Amount", "mean")
+            ).reset_index()
+            
+            bu_performance = bu_performance.merge(top_vendor_per_bu[['Business Unit', 'Vendor Name']], on="Business Unit", how="left").rename(columns={"Vendor Name": "Top Vendor"})
+            
+            # Format dataframe for display
+            bu_performance_display = bu_performance.copy()
+            bu_performance_display['Total_Amount_Spent'] = bu_performance_display['Total_Amount_Spent'].apply(lambda x: f"៛ {x:,.0f}")
+            bu_performance_display['Average_PO_Value'] = bu_performance_display['Average_PO_Value'].apply(lambda x: f"៛ {x:,.0f}")
+            
+            st.dataframe(bu_performance_display, use_container_width=True)
+
+            st.markdown("---")
+            
+            # Stacked Bar Chart - PO Distribution by Business Unit
+            bu_po_dist = filtered.groupby(["Business Unit", "Po Type"])["Amount"].sum().reset_index()
+            fig_bu_stacked = px.bar(
+                bu_po_dist,
+                x="Business Unit",
+                y="Amount",
+                color="Po Type",
+                title="Spending Distribution by PO Type per Business Unit",
+                labels={"Amount": "Total Amount (៛)"}
+            )
+            fig_bu_stacked.update_layout(xaxis_tickangle=-45)
+            st.plotly_chart(fig_bu_stacked, use_container_width=True)
+
+            # Monthly Trend Line Chart
+            bu_monthly_trend = filtered.groupby(["Period", "Business Unit"])["Amount"].sum().reset_index()
+            fig_bu_trend = px.line(
+                bu_monthly_trend,
+                x="Period",
+                y="Amount",
+                color="Business Unit",
+                title="Monthly Spending Trend by Business Unit",
+                labels={"Amount": "Total Amount (៛)"}
+            )
+            fig_bu_trend.update_layout(xaxis_tickangle=-45)
+            st.plotly_chart(fig_bu_trend, use_container_width=True)
+        else:
+            st.info("No Business Unit data to analyze.")
+
+    # ===== VENDORS & PERFORMANCE TAB =====
+    with tab_vendor:
+        if "Vendor Name" in filtered.columns and not filtered.empty:
+            # Top 10 Vendors Ranked List
+            st.subheader("Top 10 Vendors Ranked List")
+            vendor_performance = filtered.groupby("Vendor Name").agg(
+                Total_Spending=("Amount", "sum"),
+                Number_of_POs=("Amount", "count"),
+                Average_PO_Value=("Amount", "mean")
+            ).reset_index().sort_values("Total_Spending", ascending=False)
+            
+            # Format for display
+            vendor_performance_display = vendor_performance.head(10).copy()
+            vendor_performance_display['Total_Spending'] = vendor_performance_display['Total_Spending'].apply(lambda x: f"៛ {x:,.0f}")
+            vendor_performance_display['Average_PO_Value'] = vendor_performance_display['Average_PO_Value'].apply(lambda x: f"៛ {x:,.0f}")
+            
+            st.dataframe(vendor_performance_display, use_container_width=True)
+
+            st.markdown("---")
+
+            # Vendor Distribution Pie Chart and Scatter Plot (Using Top 10 Data)
+            top_10_vendors_for_charts = vendor_performance.head(10).copy()
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.subheader("Top 10 Vendors Distribution")
+                fig_vendor_pie = px.pie(
+                    top_10_vendors_for_charts,
+                    names="Vendor Name",
+                    values="Total_Spending",
+                    title="Market Share by Top 10 Vendors"
+                )
+                fig_vendor_pie.update_traces(textinfo='percent')
+                st.plotly_chart(fig_vendor_pie, use_container_width=True)
+            with c2:
+                st.subheader("Top 10 Vendors by Spending")
+                fig_bar_top_vendors = px.bar(
+                    top_10_vendors_for_charts,
+                    x="Vendor Name",
+                    y="Total_Spending",
+                    title="Top 10 Vendors by Total Spending",
+                    labels={
+                        "Total_Spending": "Total Spending (៛)",
+                        "Vendor Name": "Vendor Name"
+                    }
+                )
+                st.plotly_chart(fig_bar_top_vendors, use_container_width=True)
+
+            st.markdown("---")
+
+            # Vendor Performance Metrics by PO Type
+            st.subheader("Vendor Performance Metrics by PO Type")
+            vendor_po_type_perf = filtered.groupby(["Vendor Name", "Po Type"]).agg(
+                Total_Spending=("Amount", "sum"),
+                Number_of_POs=("Amount", "count"),
+                Average_PO_Value=("Amount", "mean")
+            ).reset_index()
+            
+            # Format for display
+            vendor_po_type_perf_display = vendor_po_type_perf.copy()
+            vendor_po_type_perf_display['Total_Spending'] = vendor_po_type_perf_display['Total_Spending'].apply(lambda x: f"៛ {x:,.0f}")
+            vendor_po_type_perf_display['Average_PO_Value'] = vendor_po_type_perf_display['Average_PO_Value'].apply(lambda x: f"៛ {x:,.0f}")
+            
+            st.dataframe(vendor_po_type_perf_display, use_container_width=True)
+        else:
+            st.info("No Vendor data to analyze.")
+
+
+# This ensures the Supplier function runs when the script is executed
+if __name__ == "__main__":
+    Supplier()

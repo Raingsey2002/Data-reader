@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 
 @st.cache_data(show_spinner=False)
@@ -334,11 +335,11 @@ def Supplier():
     else:
         business_unit_data = pd.DataFrame(columns=["Business Unit", "Amount"])
 
-    # Top 5 Vendors
+    # Top 10 Vendors
     if "Vendor Name" in filtered.columns:
-        top_5_vendors = filtered.groupby("Vendor Name")["Amount"].sum().nlargest(5).reset_index()
+        top_10_vendors = filtered.groupby("Vendor Name")["Amount"].sum().nlargest(10).reset_index()
     else:
-        top_5_vendors = pd.DataFrame(columns=["Vendor Name", "Amount"])
+        top_10_vendors = pd.DataFrame(columns=["Vendor Name", "Amount"])
 
     # Monthly trend
     po_data = filtered.groupby("Period", as_index=False).agg(Amount=("Amount", "sum")).sort_values("Period")
@@ -361,7 +362,7 @@ def Supplier():
                     names="Po Type", 
                     values="Amount", 
                     hole=0.4, 
-                    title="Spending by PO Type"
+                    title="Distribution by PO Type"
                 )
                 fig_pie_type.update_traces(textinfo='percent+label')
                 fig_pie_type.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=300, showlegend=True)
@@ -381,7 +382,7 @@ def Supplier():
                         "Business Unit": "Business Unit",
                         "Amount": "Total Amount (៛)"
                     },
-                    title="Spending by Business Unit ",
+                    title="Distribution by Business Unit",
                 )
 
                 # Make the chart tall enough + very wide → page becomes horizontally scrollable
@@ -400,19 +401,23 @@ def Supplier():
         
         st.markdown("---")
 
-        # --- Top 5 Vendors and Monthly Trend ---
+        # --- Top 10 Vendors and Monthly Trend ---
         c3, c4 = st.columns(2)
         with c3:
-            st.subheader("Top 5 Vendors by Amount")
-            if not top_5_vendors.empty:
+            st.subheader("Top 10 Vendors by Amount")
+            if not top_10_vendors.empty:
                 fig_bar_vendor = px.bar(
-                    top_5_vendors, 
+                    top_10_vendors, 
                     x="Vendor Name", 
                     y="Amount", 
                     labels={"Amount": "Total Amount (៛)"},
-                    title="Top Vendors by Spending"
+                    title="Top 10 Vendors by Amount"
                 )
-                fig_bar_vendor.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=320)
+                fig_bar_vendor.update_layout(
+                    margin=dict(l=10, r=10, t=40, b=10), 
+                    height=320,
+                    xaxis_tickangle=-45  # Rotate the x-axis labels to -45 degrees
+                )
                 st.plotly_chart(fig_bar_vendor, use_container_width=True)
             else:
                 st.info("No data for vendors.")
@@ -426,7 +431,7 @@ def Supplier():
                     y="Amount", 
                     markers=True, 
                     labels={"Amount": "PO Amount (៛)", "Period": "Period (YYYY-MM)"},
-                    title="Total Spending Over Time"
+                    title="Monthly Spending Trend"
                 )
                 fig_area.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=320)
                 st.plotly_chart(fig_area, use_container_width=True)
@@ -435,7 +440,24 @@ def Supplier():
 
         st.markdown("---")
 
-        # --- Transactions Table ---
+        # --- Yearly Spending Comparison ---
+        st.subheader("Yearly Spending Comparison")
+        yearly_spending = filtered.groupby("Year")["Amount"].sum().reset_index()
+        if not yearly_spending.empty:
+            fig_yearly_spending = px.bar(
+                yearly_spending,
+                x="Year",
+                y="Amount",
+                labels={"Amount": "Total Amount (៛)"},
+                title="Total Spending by Year"
+            )
+            st.plotly_chart(fig_yearly_spending, use_container_width=True)
+        else:
+            st.info("No data for yearly spending comparison.")
+
+        st.markdown("---")
+    
+        # --- Supplier Detail Table ---
         st.subheader("Suppiler Detail Table")
         display_cols = [
             c for c in [
@@ -453,6 +475,12 @@ def Supplier():
             use_container_width=True,
             height=320,
         )
+
+        
+        # Format 'Amount' column for display
+        display_df = filtered[display_cols].copy()
+        display_df['Amount'] = display_df['Amount'].apply(lambda x: f"៛ {x:,.0f}")
+        
 
     # ===== DETAILED ANALYSIS TAB =====
     with tab_analysis:
@@ -483,54 +511,67 @@ def Supplier():
                     x="Po Type",
                     y="Value",
                     labels={"Value": "Number of POs"},
-                    title="PO Count by Type",
+                    title="PO Count Comparison by Type",
                     color="Po Type"
                 )
                 fig_count_compare.update_layout(showlegend=False, margin=dict(t=40))
                 st.plotly_chart(fig_count_compare, use_container_width=True)
             
             with c_amount:
+                # Change this part to a Pie chart for Total Amount
                 amount_data = po_type_analysis_melted[po_type_analysis_melted['Metric'] == 'Total_Amount']
-                fig_amount_compare = px.bar(
+                fig_amount_compare = px.pie(
                     amount_data,
-                    x="Po Type",
-                    y="Value",
-                    labels={"Value": "Total Amount (៛)"},
-                    title="Total Amount by PO Type",
+                    names="Po Type",
+                    values="Value",
+                    title="Total Amount Comparison by PO Type",
                     color="Po Type"
                 )
-                fig_amount_compare.update_layout(showlegend=False, margin=dict(t=40))
+                fig_amount_compare.update_traces(textinfo='percent+label')  
                 st.plotly_chart(fig_amount_compare, use_container_width=True)
-
         else:
             st.info("No PO Type data to analyze.")
 
         st.markdown("---")
 
         st.subheader("Business Unit Analysis")
+        # Filtered Business Unit Performance Data
         if "Business Unit" in filtered.columns and not filtered.empty:
-            # Business Unit Performance Grid
-            top_vendor_per_bu = filtered.groupby(['Business Unit', 'Vendor Name'])['Amount'].sum().reset_index()
-            # Find the index of the max amount for each Business Unit
-            idx = top_vendor_per_bu.groupby('Business Unit')['Amount'].idxmax()
-            top_vendor_per_bu = top_vendor_per_bu.loc[idx]
-            
-            bu_performance = filtered.groupby("Business Unit").agg(
-                Total_Amount_Spent=("Amount", "sum"),
-                PO_Count=("Amount", "count"),
-                Average_PO_Value=("Amount", "mean")
-            ).reset_index()
-            
-            bu_performance = bu_performance.merge(top_vendor_per_bu[['Business Unit', 'Vendor Name']], on="Business Unit", how="left").rename(columns={"Vendor Name": "Top Vendor"})
-            
-            # Format dataframe for display
-            bu_performance_display = bu_performance.copy()
-            bu_performance_display['Total_Amount_Spent'] = bu_performance_display['Total_Amount_Spent'].apply(lambda x: f"៛ {x:,.0f}")
-            bu_performance_display['Average_PO_Value'] = bu_performance_display['Average_PO_Value'].apply(lambda x: f"៛ {x:,.0f}")
-            
-            st.dataframe(bu_performance_display, use_container_width=True)
+            # Spending Bar Chart - Top 10 Business Units
+            # Group by Business Unit and calculate the total spending
+            bu_spending = filtered.groupby("Business Unit")["Amount"].sum().reset_index()
 
-            st.markdown("---")
+            # Sort by total spending and select top 10 Business Units
+            top_10_bu_spending = bu_spending.sort_values("Amount", ascending=False).head(10)
+
+            # Ensure 'Business Unit' is treated as a string
+            top_10_bu_spending['Business Unit'] = top_10_bu_spending['Business Unit'].astype(str)
+
+            # Create a bar chart for the top 10 Business Units by spending
+            fig_bu_spending = px.bar(
+                top_10_bu_spending,
+                x="Business Unit",
+                y="Amount",
+                title="Top 10 Business Units by Total Spending",
+                labels={"Amount": "Total Amount (៛)", "Business Unit": "Business Unit"}
+            )
+
+            # Update layout: Increase margin for x-axis, rotate labels, and adjust font size
+            fig_bu_spending.update_layout(
+                xaxis_tickangle=-45,  # Rotate labels by 45 degrees for better readability
+                title_font_size=19,   # Set title font size
+                xaxis=dict(
+                    tickmode='array', 
+                    tickvals=top_10_bu_spending['Business Unit'],  
+                    ticktext=top_10_bu_spending['Business Unit'],  
+                    tickfont=dict(size=12)  
+                ),
+                margin=dict(l=10, r=10, t=40, b=150) 
+            )
+
+            # Display the chart
+            st.plotly_chart(fig_bu_spending, use_container_width=True)
+
             
             # Stacked Bar Chart - PO Distribution by Business Unit
             bu_po_dist = filtered.groupby(["Business Unit", "Po Type"])["Amount"].sum().reset_index()
@@ -542,8 +583,13 @@ def Supplier():
                 title="Spending Distribution by PO Type per Business Unit",
                 labels={"Amount": "Total Amount (៛)"}
             )
-            fig_bu_stacked.update_layout(xaxis_tickangle=-45)
+            fig_bu_stacked.update_layout(
+                xaxis_tickangle=-45,
+                title_font_size=19
+            )
+
             st.plotly_chart(fig_bu_stacked, use_container_width=True)
+
 
             # Monthly Trend Line Chart
             bu_monthly_trend = filtered.groupby(["Period", "Business Unit"])["Amount"].sum().reset_index()
@@ -555,10 +601,28 @@ def Supplier():
                 title="Monthly Spending Trend by Business Unit",
                 labels={"Amount": "Total Amount (៛)"}
             )
-            fig_bu_trend.update_layout(xaxis_tickangle=-45)
+            fig_bu_trend.update_layout(xaxis_tickangle=-45, title_font_size=19  )
             st.plotly_chart(fig_bu_trend, use_container_width=True)
         else:
             st.info("No Business Unit data to analyze.")
+
+        st.markdown("---")
+
+        # --- Yearly Spending Trend ---
+        st.subheader("Yearly Spending Trend")
+        yearly_analysis = filtered.groupby("Year")["Amount"].sum().reset_index()
+
+        if not yearly_analysis.empty:
+            fig_yearly_analysis = px.bar(
+                yearly_analysis,
+                x="Year",
+                y="Amount",
+                labels={"Amount": "Total Spending (៛)"},
+                title="Total Spending by Year"
+            )
+            st.plotly_chart(fig_yearly_analysis, use_container_width=True)
+        else:
+            st.info("No data for yearly spending trend.")
 
     # ===== VENDORS & PERFORMANCE TAB =====
     with tab_vendor:
@@ -590,7 +654,7 @@ def Supplier():
                     top_10_vendors_for_charts,
                     names="Vendor Name",
                     values="Total_Spending",
-                    title="Market Share by Top 10 Vendors"
+                    title="Top 10 Vendors Distribution"
                 )
                 fig_vendor_pie.update_traces(textinfo='percent')
                 st.plotly_chart(fig_vendor_pie, use_container_width=True)
@@ -600,7 +664,7 @@ def Supplier():
                     top_10_vendors_for_charts,
                     x="Vendor Name",
                     y="Total_Spending",
-                    title="Top 10 Vendors by Total Spending",
+                    title="Top 10 Vendors by Spending",
                     labels={
                         "Total_Spending": "Total Spending (៛)",
                         "Vendor Name": "Vendor Name"
@@ -624,6 +688,26 @@ def Supplier():
             vendor_po_type_perf_display['Average_PO_Value'] = vendor_po_type_perf_display['Average_PO_Value'].apply(lambda x: f"៛ {x:,.0f}")
             
             st.dataframe(vendor_po_type_perf_display, use_container_width=True)
+
+            st.markdown("---")
+
+            # --- Top 10 Vendors by Year ---
+            st.subheader("Top 10 Vendors by Year")
+            top_vendors_by_year = filtered.groupby(["Year", "Vendor Name"])["Amount"].sum().reset_index()
+            top_vendors_by_year = top_vendors_by_year.loc[top_vendors_by_year.groupby("Year")["Amount"].nlargest(10).reset_index(level=0, drop=True).index]
+
+            if not top_vendors_by_year.empty:
+                fig_top_vendors_by_year = px.bar(
+                    top_vendors_by_year,
+                    x="Year",
+                    y="Amount",
+                    color="Vendor Name",
+                    labels={"Amount": "Total Amount (៛)"},
+                    title="Top 10 Vendors by Spending Each Year"
+                )
+                st.plotly_chart(fig_top_vendors_by_year, use_container_width=True)
+            else:
+                st.info("No data for top vendors by year.")
         else:
             st.info("No Vendor data to analyze.")
 

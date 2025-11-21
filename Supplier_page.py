@@ -352,17 +352,17 @@ def Supplier():
 
     # ===== OVERVIEW & TRANSACTIONS TAB =====
     with tab_overview:
-        # --- Key Distribution Charts ---
+        # --- Key Amount Spent Charts ---
         c1, c2 = st.columns(2)
         with c1:
-            st.subheader("Distribution by PO Type")
+            st.subheader("Amount Spent by PO Type")
             if not po_type_data.empty:
                 fig_pie_type = px.pie(
                     po_type_data, 
                     names="Po Type", 
                     values="Amount", 
                     hole=0.4, 
-                    title="Distribution by PO Type"
+                    title="Amount Spent by PO Type"
                 )
                 fig_pie_type.update_traces(textinfo='percent+label')
                 fig_pie_type.update_layout(margin=dict(l=10, r=10, t=40, b=10), height=300, showlegend=True)
@@ -371,7 +371,7 @@ def Supplier():
                 st.info("No data for PO types.")
 
         with c2:
-            st.subheader("Distribution by Business Unit")
+            st.subheader("Amount Spent by Business Unit")
 
             if not business_unit_data.empty:
                 fig_bu_bar = px.bar(
@@ -382,7 +382,7 @@ def Supplier():
                         "Business Unit": "Business Unit",
                         "Amount": "Total Amount (៛)"
                     },
-                    title="Distribution by Business Unit",
+                    title="Amount Spent by Business Unit",
                 )
 
                 # Make the chart tall enough + very wide → page becomes horizontally scrollable
@@ -573,14 +573,14 @@ def Supplier():
             st.plotly_chart(fig_bu_spending, use_container_width=True)
 
             
-            # Stacked Bar Chart - PO Distribution by Business Unit
+            # Stacked Bar Chart - PO Amount Spent by Business Unit
             bu_po_dist = filtered.groupby(["Business Unit", "Po Type"])["Amount"].sum().reset_index()
             fig_bu_stacked = px.bar(
                 bu_po_dist,
                 x="Business Unit",
                 y="Amount",
                 color="Po Type",
-                title="Spending Distribution by PO Type per Business Unit",
+                title="Spending Amount Spent by PO Type per Business Unit",
                 labels={"Amount": "Total Amount (៛)"}
             )
             fig_bu_stacked.update_layout(
@@ -644,50 +644,63 @@ def Supplier():
 
             st.markdown("---")
 
-            # Vendor Distribution Pie Chart and Scatter Plot (Using Top 10 Data)
+            # Vendor Amount Spent Pie Chart and Scatter Plot (Using Top 10 Data)
             top_10_vendors_for_charts = vendor_performance.head(10).copy()
-            
-            c1, c2 = st.columns(2)
+
+            c1, = st.columns(1)   
+
             with c1:
-                st.subheader("Top 10 Vendors Distribution")
+                st.subheader("Top 10 Vendors by Amount Spent")
                 fig_vendor_pie = px.pie(
                     top_10_vendors_for_charts,
                     names="Vendor Name",
                     values="Total_Spending",
-                    title="Top 10 Vendors Distribution"
+                    title="Top 10 Vendors by Amount Spent"
                 )
                 fig_vendor_pie.update_traces(textinfo='percent')
                 st.plotly_chart(fig_vendor_pie, use_container_width=True)
-            with c2:
-                st.subheader("Top 10 Vendors by Spending")
-                fig_bar_top_vendors = px.bar(
-                    top_10_vendors_for_charts,
-                    x="Vendor Name",
-                    y="Total_Spending",
-                    title="Top 10 Vendors by Spending",
-                    labels={
-                        "Total_Spending": "Total Spending (៛)",
-                        "Vendor Name": "Vendor Name"
-                    }
-                )
-                st.plotly_chart(fig_bar_top_vendors, use_container_width=True)
 
             st.markdown("---")
 
-            # Vendor Performance Metrics by PO Type
-            st.subheader("Vendor Performance Metrics by PO Type")
+
+            # Vendor Performance Metrics by PO Type (Top 10 as Bar Chart)
+            st.subheader("Top 10 Vendor by PO Types and Amount Spent")
+
             vendor_po_type_perf = filtered.groupby(["Vendor Name", "Po Type"]).agg(
                 Total_Spending=("Amount", "sum"),
                 Number_of_POs=("Amount", "count"),
                 Average_PO_Value=("Amount", "mean")
             ).reset_index()
-            
-            # Format for display
-            vendor_po_type_perf_display = vendor_po_type_perf.copy()
-            vendor_po_type_perf_display['Total_Spending'] = vendor_po_type_perf_display['Total_Spending'].apply(lambda x: f"៛ {x:,.0f}")
-            vendor_po_type_perf_display['Average_PO_Value'] = vendor_po_type_perf_display['Average_PO_Value'].apply(lambda x: f"៛ {x:,.0f}")
-            
-            st.dataframe(vendor_po_type_perf_display, use_container_width=True)
+
+            if not vendor_po_type_perf.empty:
+                # Get Top 10 by Total Spending
+                top10_vendor_po = vendor_po_type_perf.sort_values(
+                    "Total_Spending", ascending=False
+                ).head(10)
+
+                fig_vendor_po_bar = px.bar(
+                    top10_vendor_po,
+                    x="Vendor Name",
+                    y="Total_Spending",
+                    color="Po Type",
+                    labels={
+                        "Vendor Name": "Vendor",
+                        "Total_Spending": "Total Spending (៛)",
+                        "Po Type": "PO Type",
+                    },
+                    title="Top 10 Vendors by PO Type and Amount Spent",
+                )
+
+                fig_vendor_po_bar.update_layout(
+                    xaxis_tickangle=-45,
+                    title_font_size=19,
+                    margin=dict(l=10, r=10, t=40, b=120),
+                )
+
+                st.plotly_chart(fig_vendor_po_bar, use_container_width=True)
+            else:
+                st.info("No vendor–PO type performance data to display.")
+
 
             st.markdown("---")
 

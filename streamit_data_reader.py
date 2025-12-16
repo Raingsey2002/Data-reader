@@ -287,7 +287,7 @@ st.markdown(
 
 
 pages = {
-    "ទិន្នន័យមេ": [
+    "មាតិកាគណនីនៃប្លង់គណនេយ្យ": [
         st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ"),
         st.Page(Economic, title="📊  មាតិកាគណនី"),
         st.Page(Program, title="📋  កម្មវិធី"),

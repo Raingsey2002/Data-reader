@@ -192,7 +192,7 @@ def Supplier():
     st.markdown("""
     <div style="margin-bottom: 2rem;">
         <h1 class="dashboard-title">🚚 អ្នកផ្គត់ផ្គង់ - Supplier</h1>
-        <p class="dashboard-subtitle">PO overview, vendor performance, and comparison dashboard</p>
+        <p class="dashboard-subtitle">Vendor performance and comparison dashboard</p>
     </div>
     """, unsafe_allow_html=True)
 

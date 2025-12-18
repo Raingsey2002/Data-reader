@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_EXTRA_CA_CERTS=./certs/prod-ca-2021.crt next dev --turbopack",
+    "dev": "NODE_EXTRA_CA_CERTS=./certs/prod-ca-2021.crt next dev --turbopack",
     "build": "next build",
     "start": "cross-env NODE_EXTRA_CA_CERTS=./certs/prod-ca-2021.crt next start",
     "lint": "next lint",

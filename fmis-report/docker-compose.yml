@@ -1,0 +1,12 @@
+services:
+  fmis-report:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_EXTRA_CA_CERTS: /app/certs/prod-ca-2021.crt
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env

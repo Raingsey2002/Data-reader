@@ -313,14 +313,22 @@ def Report():
     
     # 3. Filter Panel
     with st.expander("Filters", expanded=True):
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4 = st.columns([1.5, 4, 1, 1])
         sel_levels = c1.multiselect("Levels", sorted(df_raw['level'].unique().astype(str)))
         
+        entity_desc_map = {}
         if masters:
             all_entities = sorted([e['code'] for e in masters['entities']])
+            for e in masters['entities']:
+                entity_desc_map[e['code']] = e['desc']
         else:
             all_entities = sorted(df_raw['norm_entity'].unique())
-        sel_entities = c2.multiselect("Entities", all_entities)
+            
+        def format_entity(code):
+            desc = entity_desc_map.get(code, "")
+            return f"{code} - {desc}" if desc else code
+
+        sel_entities = c2.multiselect("Entities", all_entities, format_func=format_entity)
         
         sel_years = c3.multiselect("Years", sorted(df_raw['year'].unique()))
         sel_months = c4.multiselect("Months", sorted(df_raw['month'].unique()))
@@ -350,10 +358,18 @@ def Report():
     inactive_reports = []
     inactive_queries = []
     if masters:
-        active_reps = set(df[df['type'] == 'Report']['code'].apply(norm).unique())
-        active_ques = set(df[df['type'] == 'Query']['code'].apply(norm).unique())
+        # Use 'name' column for types (e.g. R01, Q01)
+        active_reps = set(df[df['type'] == 'Report']['name'].apply(norm).unique())
+        active_ques = set(df[df['type'] == 'Query']['name'].apply(norm).unique())
         inactive_reports = sorted(list(set(masters['reportTypes']) - active_reps))
         inactive_queries = sorted(list(set(masters['queryTypes']) - active_ques))
+
+    # Construct Inactive Entities DataFrame with Description
+    inactive_ent_data = []
+    for code in inactive_entities:
+        desc = entity_desc_map.get(code, "")
+        inactive_ent_data.append({"Code": code, "Description": desc})
+    df_inactive_ent = pd.DataFrame(inactive_ent_data)
 
     # 5. Tabs
     t_over, t_rep, t_que, t_data = st.tabs(["Overview", "Reports", "Queries", "Raw Data"])
@@ -462,7 +478,7 @@ def Report():
             st.dataframe(pd.DataFrame(inactive_queries, columns=["Code"]), use_container_width=True, height=300)
         with i3:
             st.caption("Inactive Entities")
-            st.dataframe(pd.DataFrame(inactive_entities, columns=["Code"]), use_container_width=True, height=300)
+            st.dataframe(df_inactive_ent, use_container_width=True, height=300)
 
     # --- TAB: REPORTS ---
     with t_rep:
@@ -503,6 +519,16 @@ def Report():
         if fig_type: st.plotly_chart(fig_type, use_container_width=True)
         else: st.info("No report type data")
 
+        # Inactive Lists for Reports
+        st.markdown("---")
+        ir1, ir2 = st.columns(2)
+        with ir1: 
+            st.caption("Inactive Report Types")
+            st.dataframe(pd.DataFrame(inactive_reports, columns=["Code"]), use_container_width=True, height=300)
+        with ir2:
+            st.caption("Inactive Entities (Reports Context)")
+            st.dataframe(df_inactive_ent, use_container_width=True, height=300)
+
     # --- TAB: QUERIES ---
     with t_que:
         # KPIs Specific
@@ -541,6 +567,16 @@ def Report():
         fig_type = chart_type_dist(s['queryTypeDistribution'], "Query Type Distribution", COLOR_QUERY)
         if fig_type: st.plotly_chart(fig_type, use_container_width=True)
         else: st.info("No query type data")
+
+        # Inactive Lists for Queries
+        st.markdown("---")
+        iq1, iq2 = st.columns(2)
+        with iq1:
+            st.caption("Inactive Query Types")
+            st.dataframe(pd.DataFrame(inactive_queries, columns=["Code"]), use_container_width=True, height=300)
+        with iq2:
+            st.caption("Inactive Entities (Queries Context)")
+            st.dataframe(df_inactive_ent, use_container_width=True, height=300)
 
     # --- TAB: RAW DATA ---
     with t_data:

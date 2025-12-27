@@ -168,7 +168,12 @@ def calculate_summary(df):
         "monthlyComparison": [],
         "reportTypeDistribution": [],
         "queryTypeDistribution": [],
-        "activeEntities": []
+        "activeEntities": [],
+        "topEntities": {
+            "overall": {"code": "-", "count": 0},
+            "reports": {"code": "-", "count": 0},
+            "queries": {"code": "-", "count": 0}
+        }
     }
     
     if df.empty:
@@ -267,6 +272,22 @@ def calculate_summary(df):
     que_types.columns = ['name', 'value']
     summary["queryTypeDistribution"] = que_types.to_dict('records')
 
+    # 7. Top Entities
+    # Overall
+    if not ent_grp.empty:
+        top_overall = ent_grp.sort_values('total', ascending=False).iloc[0]
+        summary["topEntities"]["overall"] = {"code": top_overall.name, "count": int(top_overall['total'])}
+        
+        # Reports
+        if 'Report' in ent_grp.columns:
+             top_rep = ent_grp.sort_values('Report', ascending=False).iloc[0]
+             summary["topEntities"]["reports"] = {"code": top_rep.name, "count": int(top_rep['Report'])}
+        
+        # Queries
+        if 'Query' in ent_grp.columns:
+             top_que = ent_grp.sort_values('Query', ascending=False).iloc[0]
+             summary["topEntities"]["queries"] = {"code": top_que.name, "count": int(top_que['Query'])}
+
     return summary
 
 # ==========================================
@@ -300,22 +321,94 @@ def Report():
     if df_raw.empty:
         st.warning("No data available.")
         st.stop()
-        
-    min_date = f"{df_raw['day'].min()}/{df_raw['month'].min()}/{df_raw['year'].min()}"
-    max_date = f"{df_raw['day'].max()}/{df_raw['month'].max()}/{df_raw['year'].max()}"
     
+    # ---------- FILTER SESSION STATE ----------
+    if "report_levels" not in st.session_state:
+        st.session_state["report_levels"] = []
+    if "report_entities" not in st.session_state:
+        st.session_state["report_entities"] = []
+    if "report_years" not in st.session_state:
+        st.session_state["report_years"] = []
+    if "report_months" not in st.session_state:
+        st.session_state["report_months"] = []
+        
+    # Date Formatting
+    months_map = {i: m for i, m in enumerate(MONTHS, 1)}
+    
+    # Sort to determine true min/max dates
+    df_sorted = df_raw.sort_values(by=['year', 'month', 'day'])
+    
+    if not df_sorted.empty:
+        min_row = df_sorted.iloc[0]
+        max_row = df_sorted.iloc[-1]
+        
+        d_min, m_min, y_min = min_row['day'], min_row['month'], min_row['year']
+        d_max, m_max, y_max = max_row['day'], max_row['month'], max_row['year']
+    else:
+        # Fallback if empty
+        d_min, m_min, y_min = 0, 0, 0
+        d_max, m_max, y_max = 0, 0, 0
+    
+    min_date_str = f"{int(d_min):02d} {months_map.get(int(m_min), '')} {int(y_min)}"
+    max_date_str = f"{int(d_max):02d} {months_map.get(int(m_max), '')} {int(y_max)}"
+
+    # New Header UI
     st.markdown(f"""
-    <div>
-        <h1 class="dashboard-title">📘 Report & Query Analytics Dashboard</h1>
-        <p class="dashboard-subtitle">Coverage: {min_date} — {max_date}</p>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1 class="dashboard-title" style="margin: 0;">📘 Report & Query Analytics Dashboard</h1>
+        <div style="background-color: #047857; color: white; padding: 0.5rem 1rem; border-radius: 6px; font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+            <span style="margin-right: 6px;">📅</span> 
+            Coverage: {min_date_str} — {max_date_str}
+        </div>
     </div>
     """, unsafe_allow_html=True)
     
     # 3. Filter Panel
+    def clear_filters_callback():
+        """Callback to reset all filter session states."""
+        st.session_state["report_levels"] = []
+        st.session_state["report_entities"] = []
+        st.session_state["report_years"] = []
+        st.session_state["report_months"] = []
+        st.session_state["filter_types_combined"] = []
+
+    # --- Clear button at top right, above the filter box ---
+    clear_button_row_col1, clear_button_row_col2 = st.columns([0.90, 0.10])
+    
+    is_filtered = any([st.session_state["report_levels"], 
+                        st.session_state["report_entities"], 
+                        st.session_state["report_years"], 
+                        st.session_state["report_months"],
+                        st.session_state.get("filter_types_combined")])
+
+    if is_filtered:
+        message = "Active filters applied."
+        style = "background-color: #ffe0e0; border-left: 5px solid #dc3545; color: #dc3545;"
+    else:
+        message = "No filters selected: displaying all available data."
+        style = "background-color: #e0f2f7; border-left: 5px solid #007bff; color: #0056b3;"
+
+    with clear_button_row_col1:
+        st.markdown(f"""
+        <div style="{style} padding: 5px 10px; border-radius: 3px; display: inline-block;">
+            <p style="font-size: 0.75rem; margin: 0;">{message}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    with clear_button_row_col2:
+        st.button("Clear filters", key="clear_report_filters_button", on_click=clear_filters_callback)
+
     with st.expander("Filters", expanded=True):
-        c1, c2, c3, c4 = st.columns([1.5, 4, 1, 1])
-        sel_levels = c1.multiselect("Levels", sorted(df_raw['level'].unique().astype(str)))
+        # Layout: Levels | Entities | Types | Years | Months
+        c1, c2, c3, c4, c5 = st.columns([1.2, 3, 1.7, 1.4, 0.9])
         
+        # 1. Levels
+        sel_levels = c1.multiselect(
+            "Levels", 
+            sorted(df_raw['level'].unique().astype(str)),
+            key="report_levels"
+        )
+        
+        # 2. Entities
         entity_desc_map = {}
         if masters:
             all_entities = sorted([e['code'] for e in masters['entities']])
@@ -328,10 +421,37 @@ def Report():
             desc = entity_desc_map.get(code, "")
             return f"{code} - {desc}" if desc else code
 
-        sel_entities = c2.multiselect("Entities", all_entities, format_func=format_entity)
+        sel_entities = c2.multiselect(
+            "Entities", 
+            all_entities, 
+            format_func=format_entity,
+            key="report_entities"
+        )
+
+        # 3. Report/Query Types (Moved Here)
+        all_rep_types = masters['reportTypes'] if masters else sorted(df_raw[df_raw['type']=='Report']['name'].unique())
+        all_que_types = masters['queryTypes'] if masters else sorted(df_raw[df_raw['type']=='Query']['name'].unique())
+        all_types = sorted(list(set(all_rep_types + all_que_types)))
         
-        sel_years = c3.multiselect("Years", sorted(df_raw['year'].unique()))
-        sel_months = c4.multiselect("Months", sorted(df_raw['month'].unique()))
+        sel_types_combined = c3.multiselect(
+            "Report/Query Types", 
+            all_types, 
+            key="filter_types_combined"
+        )
+        
+        # 4. Years
+        sel_years = c4.multiselect(
+            "Years", 
+            sorted(df_raw['year'].unique()),
+            key="report_years"
+        )
+
+        # 5. Months
+        sel_months = c5.multiselect(
+            "Months", 
+            sorted(df_raw['month'].unique()),
+            key="report_months"
+        )
 
     # Apply Filters
     df = df_raw.copy()
@@ -343,14 +463,30 @@ def Report():
         df = df[df['year'].isin(sel_years)]
     if sel_months:
         df = df[df['month'].isin(sel_months)]
+    if sel_types_combined:
+        df = df[df['name'].isin(sel_types_combined)]
         
     # 4. Calculate Summary Logic
     s = calculate_summary(df)
     
     # Inactive Logic
-    universe_entities = sel_entities if sel_entities else (
-        [e['code'] for e in masters['entities']] if masters else df_raw['norm_entity'].unique()
-    )
+    # Inactive Logic
+    # 1. Determine Universe of Entities (respecting Level filter if set, but Entity filter is empty)
+    if sel_entities:
+        universe_entities = sel_entities
+    elif sel_levels:
+        # If Level is selected but Entities are NOT, restrict universe to that Level
+        if masters:
+             universe_entities = [e['code'] for e in masters['entities'] if e['level'] in sel_levels]
+        else:
+             # Fallback if no masters
+             universe_entities = df_raw[df_raw['level'].isin(sel_levels)]['norm_entity'].unique()
+    else:
+        # No hierarchy filters -> Full universe
+        if masters:
+            universe_entities = [e['code'] for e in masters['entities']]
+        else:
+             universe_entities = df_raw['norm_entity'].unique()
     active_in_filter = set(df['norm_entity'].unique())
     inactive_entities = sorted(list(set(universe_entities) - active_in_filter))
     
@@ -361,8 +497,19 @@ def Report():
         # Use 'name' column for types (e.g. R01, Q01)
         active_reps = set(df[df['type'] == 'Report']['name'].apply(norm).unique())
         active_ques = set(df[df['type'] == 'Query']['name'].apply(norm).unique())
-        inactive_reports = sorted(list(set(masters['reportTypes']) - active_reps))
-        inactive_queries = sorted(list(set(masters['queryTypes']) - active_ques))
+        
+        # Determine Universe based on Filter
+        if sel_types_combined:
+             # If filter is applied, universe is the intersection of selection and valid types
+             universe_reps = set(sel_types_combined).intersection(set(masters['reportTypes']))
+             universe_ques = set(sel_types_combined).intersection(set(masters['queryTypes']))
+        else:
+             # If no filter, universe is ALL types
+             universe_reps = set(masters['reportTypes'])
+             universe_ques = set(masters['queryTypes'])
+
+        inactive_reports = sorted(list(universe_reps - active_reps))
+        inactive_queries = sorted(list(universe_ques - active_ques))
 
     # Construct Inactive Entities DataFrame with Description
     inactive_ent_data = []
@@ -409,22 +556,23 @@ def Report():
         fig.update_layout(barmode='group', title="Yearly Comparison", xaxis_title="Year", yaxis_title="Count")
         return fig
         
-    def chart_type_dist(data, title, color):
+    def chart_type_dist(data, title, color, height=None):
         df_chart = pd.DataFrame(data)
         if df_chart.empty: return None
         fig = px.bar(df_chart, x='value', y='name', orientation='h', title=title,
-                     color_discrete_sequence=[color])
+                     color_discrete_sequence=[color], height=height)
         fig.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis_title="Count", yaxis_title="")
         return fig
 
     # --- TAB: OVERVIEW ---
     with t_over:
         # KPIs
-        k1, k2, k3, k4 = st.columns(4)
+        k1, k2, k3, k4, k5 = st.columns(5)
         with k1: metric_card("Total Activities", f"{s['totals']['reports'] + s['totals']['queries']:,}", COLOR_MIXED)
         with k2: metric_card("Reports Generated", f"{s['totals']['reports']:,}", COLOR_REPORT)
         with k3: metric_card("Queries Generated", f"{s['totals']['queries']:,}", COLOR_QUERY)
-        with k4: metric_card("Inactive Entities", f"{len(inactive_entities)}", "#ef4444")
+        with k4: metric_card("Top Active Entity", f"{s['topEntities']['overall']['code']}", "#d97706")
+        with k5: metric_card("Inactive Entities", f"{len(inactive_entities)}", "#ef4444")
         st.markdown("---")
         
         r1c1, r1c2 = st.columns(2)
@@ -467,26 +615,53 @@ def Report():
             st.plotly_chart(fig_ent, use_container_width=True)
         else:
             st.info("No entity data")
+        
+        # Top 10 Generated Report / Query
+        st.subheader("Report and Query Performance")
+        tc1, tc2 = st.columns(2)
+        with tc1:
+            if s['reportTypeDistribution']:
+                top10_rep = s['reportTypeDistribution'][:10]
+                fig_top_rep = chart_type_dist(top10_rep, "Top 10 Most Generated Reports", COLOR_REPORT, height=400)
+                st.plotly_chart(fig_top_rep, use_container_width=True)
+            else:
+                st.info("No report data")
+        with tc2:
+            if s['queryTypeDistribution']:
+                top10_que = s['queryTypeDistribution'][:10]
+                fig_top_que = chart_type_dist(top10_que, "Top 10 Most Generated Queries", COLOR_QUERY, height=400)
+                st.plotly_chart(fig_top_que, use_container_width=True)
+            else:
+                st.info("No query data")
             
         # Inactive Lists
+        st.markdown("---")
+        st.subheader("Inactive Lists")
         i1, i2, i3 = st.columns(3)
         with i1: 
-            st.caption("Inactive Report Types")
-            st.dataframe(pd.DataFrame(inactive_reports, columns=["Code"]), use_container_width=True, height=300)
+            st.caption(f"Inactive Report Types (Total: {len(inactive_reports)})")
+            df_ir = pd.DataFrame(inactive_reports, columns=["Code"])
+            df_ir.index += 1
+            st.dataframe(df_ir, use_container_width=True, height=300)
         with i2:
-            st.caption("Inactive Query Types")
-            st.dataframe(pd.DataFrame(inactive_queries, columns=["Code"]), use_container_width=True, height=300)
+            st.caption(f"Inactive Query Types (Total: {len(inactive_queries)})")
+            df_iq = pd.DataFrame(inactive_queries, columns=["Code"])
+            df_iq.index += 1
+            st.dataframe(df_iq, use_container_width=True, height=300)
         with i3:
-            st.caption("Inactive Entities")
-            st.dataframe(df_inactive_ent, use_container_width=True, height=300)
+            st.caption(f"Inactive Entities (Total: {len(df_inactive_ent)})")
+            df_ie = df_inactive_ent.copy()
+            df_ie.index += 1
+            st.dataframe(df_ie, use_container_width=True, height=300)
 
     # --- TAB: REPORTS ---
     with t_rep:
         # KPIs Specific
-        rk1, rk2, rk3 = st.columns(3)
+        rk1, rk2, rk3, rk4 = st.columns(4)
         with rk1: metric_card("Total Reports", f"{s['totals']['reports']:,}", COLOR_REPORT)
         with rk2: metric_card("Active Entities", f"{len(s['activeEntities']):,}", "black")
-        with rk3: metric_card("Inactive Report Types", f"{len(inactive_reports)}", "#ef4444")
+        with rk3: metric_card("Top Reporting Entity", f"{s['topEntities']['reports']['code']}", "#d97706")
+        with rk4: metric_card("Inactive Report Types", f"{len(inactive_reports)}", "#ef4444")
         st.markdown("---")
         
         rr1, rr2 = st.columns(2)
@@ -514,28 +689,52 @@ def Report():
             fig = chart_yearly(s['yearlyTotals'], "reports")
             if fig: st.plotly_chart(fig, use_container_width=True)
             else: st.info("No yearly data")
-        
-        fig_type = chart_type_dist(s['reportTypeDistribution'], "Report Type Distribution", COLOR_REPORT)
+
+                # Top 10 Entities (Reports)
+        st.subheader("Top 10 Entities Performance (Reports)")
+        if s['entityPerformance']:
+            df_ent_perf = pd.DataFrame(s['entityPerformance'])
+            # Sort by reports descending
+            df_ent_perf = df_ent_perf.sort_values('reports', ascending=False).head(10)
+            fig_entr = px.bar(df_ent_perf, y='entity', x='reports', orientation='h', 
+                             title="Entities by Report Volume", color_discrete_sequence=[COLOR_REPORT])
+            fig_entr.update_layout(yaxis={'categoryorder':'total ascending'})
+            st.plotly_chart(fig_entr, use_container_width=True)
+        else:
+            st.info("No entity performance data")    
+
+        st.subheader("Report performance")
+        # Report Type Distribution
+        h_rep = max(400, len(s['reportTypeDistribution']) * 25)
+        fig_type = chart_type_dist(s['reportTypeDistribution'], "Report Type Distribution", COLOR_REPORT, height=h_rep)
         if fig_type: st.plotly_chart(fig_type, use_container_width=True)
         else: st.info("No report type data")
 
+
+
         # Inactive Lists for Reports
         st.markdown("---")
+        st.subheader("Inactive Lists")
         ir1, ir2 = st.columns(2)
         with ir1: 
-            st.caption("Inactive Report Types")
-            st.dataframe(pd.DataFrame(inactive_reports, columns=["Code"]), use_container_width=True, height=300)
+            st.caption(f"Inactive Report Types (Total: {len(inactive_reports)})")
+            df_ir = pd.DataFrame(inactive_reports, columns=["Code"])
+            df_ir.index += 1
+            st.dataframe(df_ir, use_container_width=True, height=300)
         with ir2:
-            st.caption("Inactive Entities (Reports Context)")
-            st.dataframe(df_inactive_ent, use_container_width=True, height=300)
+            st.caption(f"Inactive Entities (Reports Context) (Total: {len(df_inactive_ent)})")
+            df_ie = df_inactive_ent.copy()
+            df_ie.index += 1
+            st.dataframe(df_ie, use_container_width=True, height=300)
 
     # --- TAB: QUERIES ---
     with t_que:
         # KPIs Specific
-        qk1, qk2, qk3 = st.columns(3)
+        qk1, qk2, qk3, qk4 = st.columns(4)
         with qk1: metric_card("Total Queries", f"{s['totals']['queries']:,}", COLOR_QUERY)
         with qk2: metric_card("Active Entities", f"{len(s['activeEntities']):,}", "black")
-        with qk3: metric_card("Inactive Query Types", f"{len(inactive_queries)}", "#ef4444")
+        with qk3: metric_card("Top Querying Entity", f"{s['topEntities']['queries']['code']}", "#d97706")
+        with qk4: metric_card("Inactive Query Types", f"{len(inactive_queries)}", "#ef4444")
         st.markdown("---")
         
         qr1, qr2 = st.columns(2)
@@ -563,20 +762,43 @@ def Report():
             fig = chart_yearly(s['yearlyTotals'], "queries")
             if fig: st.plotly_chart(fig, use_container_width=True)
             else: st.info("No yearly data")
-        
-        fig_type = chart_type_dist(s['queryTypeDistribution'], "Query Type Distribution", COLOR_QUERY)
+
+                # Top 10 Entities (Queries)
+        st.subheader("Top 10 Entities Performance (Queries)")
+        if s['entityPerformance']:
+            df_ent_perf_q = pd.DataFrame(s['entityPerformance'])
+            # Sort by queries descending
+            df_ent_perf_q = df_ent_perf_q.sort_values('queries', ascending=False).head(10)
+            fig_entq = px.bar(df_ent_perf_q, y='entity', x='queries', orientation='h', 
+                             title="Entities by Query Volume", color_discrete_sequence=[COLOR_QUERY])
+            fig_entq.update_layout(yaxis={'categoryorder':'total ascending'})
+            st.plotly_chart(fig_entq, use_container_width=True)
+        else:
+            st.info("No entity performance data")
+
+        # Query Type Distribution
+        st.subheader("Query Performance")
+        h_que = max(400, len(s['queryTypeDistribution']) * 35)
+        fig_type = chart_type_dist(s['queryTypeDistribution'], "Query Type Distribution", COLOR_QUERY, height=h_que)
         if fig_type: st.plotly_chart(fig_type, use_container_width=True)
         else: st.info("No query type data")
 
+
+
         # Inactive Lists for Queries
         st.markdown("---")
+        st.subheader("Inactive Lists")
         iq1, iq2 = st.columns(2)
         with iq1:
-            st.caption("Inactive Query Types")
-            st.dataframe(pd.DataFrame(inactive_queries, columns=["Code"]), use_container_width=True, height=300)
+            st.caption(f"Inactive Query Types (Total: {len(inactive_queries)})")
+            df_iq = pd.DataFrame(inactive_queries, columns=["Code"])
+            df_iq.index += 1
+            st.dataframe(df_iq, use_container_width=True, height=400)
         with iq2:
-            st.caption("Inactive Entities (Queries Context)")
-            st.dataframe(df_inactive_ent, use_container_width=True, height=300)
+            st.caption(f"Inactive Entities (Queries Context) (Total: {len(df_inactive_ent)})")
+            df_ie = df_inactive_ent.copy()
+            df_ie.index += 1
+            st.dataframe(df_ie, use_container_width=True, height=400)
 
     # --- TAB: RAW DATA ---
     with t_data:

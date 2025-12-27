@@ -249,20 +249,23 @@ def calculate_summary(df):
         summary["yearlyTotals"] = yearly_totals
 
     # 5. Entity Performance
+    # Vectorized optimization: avoid iterrows
     ent_grp = df.groupby(['entity', 'type']).size().unstack(fill_value=0)
     if not ent_grp.empty:
         ent_grp['total'] = ent_grp.sum(axis=1)
         ent_grp = ent_grp.sort_values('total', ascending=False)
         
-        ent_perf = []
-        for ent, row in ent_grp.iterrows():
-            r = int(row.get('Report', 0))
-            q = int(row.get('Query', 0))
-            t = int(row.get('total', 0))
-            ent_perf.append({"entity": ent, "reports": r, "queries": q, "total": t})
+        ent_grp['entity'] = ent_grp.index
+        # Create columns expected by frontend logic if they don't exist
+        for c in ['Report', 'Query']:
+            if c not in ent_grp.columns: ent_grp[c] = 0
+            
+        ent_grp = ent_grp.rename(columns={'Report': 'reports', 'Query': 'queries', 'total': 'total'})
+        # Ensure we have the right columns
+        ent_perf = ent_grp[['entity', 'reports', 'queries', 'total']].to_dict('records')
         summary["entityPerformance"] = ent_perf
         summary["activeEntities"] = df['norm_entity'].unique().tolist()
-
+    
     # 6. Type Distribution
     rep_types = reports['name'].value_counts().head(50).reset_index()
     rep_types.columns = ['name', 'value']
@@ -274,20 +277,140 @@ def calculate_summary(df):
 
     # 7. Top Entities
     # Overall
-    if not ent_grp.empty:
-        top_overall = ent_grp.sort_values('total', ascending=False).iloc[0]
+    if not ent_grp.empty: # ent_grp is modified now
+        # Re-derive top entities from the original aggregation if needed OR use the modified df
+        # Re-doing simplified logic to avoid confusion with the modified ent_grp
+        ent_grp_raw = df.groupby(['entity', 'type']).size().unstack(fill_value=0)
+        ent_grp_raw['total'] = ent_grp_raw.sum(axis=1)
+        
+        top_overall = ent_grp_raw.sort_values('total', ascending=False).iloc[0]
         summary["topEntities"]["overall"] = {"code": top_overall.name, "count": int(top_overall['total'])}
         
         # Reports
-        if 'Report' in ent_grp.columns:
-             top_rep = ent_grp.sort_values('Report', ascending=False).iloc[0]
+        if 'Report' in ent_grp_raw.columns:
+             top_rep = ent_grp_raw.sort_values('Report', ascending=False).iloc[0]
              summary["topEntities"]["reports"] = {"code": top_rep.name, "count": int(top_rep['Report'])}
         
         # Queries
-        if 'Query' in ent_grp.columns:
-             top_que = ent_grp.sort_values('Query', ascending=False).iloc[0]
+        if 'Query' in ent_grp_raw.columns:
+             top_que = ent_grp_raw.sort_values('Query', ascending=False).iloc[0]
              summary["topEntities"]["queries"] = {"code": top_que.name, "count": int(top_que['Query'])}
 
+    return summary
+
+def calculate_user_summary(df):
+    """
+    Aggregates data specifically for the User Analytics tab.
+    Heavily optimized to avoid sorting the entire dataframe.
+    """
+    summary = {
+        "totalActiveUsers": 0,
+        "topPowerUser": {"user": "-", "entity": "-"},
+        "top10Users": [],
+        "userTable": []
+    }
+    
+    if df.empty:
+        return summary
+        
+    # 1. Total Active Users
+    total_users = df['user'].nunique()
+    summary["totalActiveUsers"] = total_users
+    
+    # 2. Activity Counts per User (Vectorized)
+    user_counts = df['user'].value_counts().reset_index()
+    user_counts.columns = ['user', 'count']
+    
+    if not user_counts.empty:
+        # Top 10 Users
+        top_10 = user_counts.head(10)
+        summary["top10Users"] = top_10.to_dict('records')
+
+        # Top Power User (Just need ID and Entity)
+        top_user_id = user_counts.iloc[0]['user']
+        # Find entity for top user (simple subset)
+        top_user_subset = df[df['user'] == top_user_id]
+        if not top_user_subset.empty:
+            t_entity = top_user_subset['entity'].mode().iloc[0] if not top_user_subset['entity'].mode().empty else "-"
+        else:
+            t_entity = "-"
+        summary["topPowerUser"] = {"user": top_user_id, "entity": t_entity}
+    
+    # 3. User Table Data - THE PERFORMANCE BOTTLENECK FIX
+    # Strategy: Do NOT sort the full dataframe. Use GroupBy Max on Dates.
+    
+    # A. Counts by Type (Crosstab is fast)
+    type_counts = pd.crosstab(df['user'], df['type']).reset_index()
+    if 'Report' not in type_counts.columns: type_counts['Report'] = 0
+    if 'Query' not in type_counts.columns: type_counts['Query'] = 0
+
+    # B. Last Active Date (Vectorized Datetime Max)
+    # Convert Y, M, D to temporary datetime for fast comparisons
+    # df columns are already ints from load_data
+    temp_dates = pd.to_datetime({
+        'year': df['year'], 
+        'month': df['month'], 
+        'day': df['day']
+    })
+    
+    # Groupby User -> Max Date (Very Fast)
+    last_active_series = temp_dates.groupby(df['user']).max()
+    
+    # Format to String DD/MM/YYYY
+    last_active_df = last_active_series.dt.strftime('%d/%m/%Y').reset_index(name='Last Active')
+
+    # C. Primary Entity & Office (Fast Mode Approximation)
+    # Calculate counts per user-entity
+    ue_counts = df.groupby(['user', 'entity']).size().reset_index(name='cnt')
+    # Sort these counts (much smaller than full df sort)
+    ue_counts = ue_counts.sort_values('cnt', ascending=False)
+    # Take first (highest count) per user
+    user_primary_entity = ue_counts.drop_duplicates(subset=['user'], keep='first')[['user', 'entity']]
+
+    # Calculate counts per user-office
+    if 'office' in df.columns:
+        uo_counts = df.groupby(['user', 'office']).size().reset_index(name='cnt')
+        uo_counts = uo_counts.sort_values('cnt', ascending=False)
+        user_primary_office = uo_counts.drop_duplicates(subset=['user'], keep='first')[['user', 'office']]
+    else:
+        user_primary_office = pd.DataFrame({'user': user_counts['user'], 'office': '-'})
+
+    # D. Merge Logic (Left Joins)
+    # Base is user_counts (contains all active users)
+    merged = user_counts.merge(type_counts, on='user', how='left')
+    merged = merged.merge(last_active_df, on='user', how='left')
+    merged = merged.merge(user_primary_entity, on='user', how='left')
+    
+    if 'office' in df.columns:
+        merged = merged.merge(user_primary_office, on='user', how='left')
+    else:
+        merged['office'] = "-"
+        
+    merged = merged.fillna({'Report': 0, 'Query': 0, 'entity': '-', 'office': '-', 'Last Active': '-'})
+
+    # Enforce integer types for consistency
+    for col in ['Report', 'Query', 'count']:
+        if col in merged.columns:
+            merged[col] = merged[col].astype(int)
+    
+    # Rename
+    merged = merged.rename(columns={
+        'user': 'User ID',
+        'entity': 'Entity',
+        'office': 'Office',
+        'Report': 'Total Reports',
+        'Query': 'Total Queries',
+        'count': 'Total Activities'
+    })
+    
+    # Reorder columns
+    cols_order = ['User ID', 'Entity', 'Office', 'Total Queries', 'Total Reports', 'Total Activities', 'Last Active']
+    # Select only existing columns to be safe, though they should all be present
+    existing_cols = [c for c in cols_order if c in merged.columns]
+    merged = merged[existing_cols]
+    
+    summary["userTable"] = merged.to_dict('records')
+    
     return summary
 
 # ==========================================
@@ -399,7 +522,7 @@ def Report():
 
     with st.expander("Filters", expanded=True):
         # Layout: Levels | Entities | Types | Years | Months
-        c1, c2, c3, c4, c5 = st.columns([1.2, 3, 1.7, 1.4, 0.9])
+        c1, c2, c3, c4, c5 = st.columns([1.2, 3, 1.7, 1.4, 1.2])
         
         # 1. Levels
         sel_levels = c1.multiselect(
@@ -511,15 +634,19 @@ def Report():
         inactive_reports = sorted(list(universe_reps - active_reps))
         inactive_queries = sorted(list(universe_ques - active_ques))
 
-    # Construct Inactive Entities DataFrame with Description
-    inactive_ent_data = []
-    for code in inactive_entities:
-        desc = entity_desc_map.get(code, "")
-        inactive_ent_data.append({"Code": code, "Description": desc})
-    df_inactive_ent = pd.DataFrame(inactive_ent_data)
+    # Construct Inactive Entities DataFrame with Description (Vectorized)
+    if inactive_entities:
+        df_inactive_ent = pd.DataFrame({"Code": inactive_entities})
+        # Use map for fast lookup
+        df_inactive_ent["Description"] = df_inactive_ent["Code"].map(entity_desc_map).fillna("")
+    else:
+        df_inactive_ent = pd.DataFrame(columns=["Code", "Description"])
 
     # 5. Tabs
-    t_over, t_rep, t_que, t_data = st.tabs(["Overview", "Reports", "Queries", "Raw Data"])
+    t_over, t_rep, t_que, t_user, t_data = st.tabs(["Overview", "Reports", "Queries", "User Analytics", "Raw Data"])
+    
+    # Calculate User Summary (Now optimized)
+    user_s = calculate_user_summary(df)
     
     # --- SHARED CHART FUNCTIONS ---
     def chart_level_dist(data, mode="both"):
@@ -528,10 +655,13 @@ def Report():
         
         fig = go.Figure()
         if mode in ["both", "reports"]:
-            fig.add_trace(go.Bar(name='Reports', x=df_chart['name'], y=df_chart['reports'], marker_color=COLOR_REPORT))
+            fig.add_trace(go.Bar(name='Reports', x=df_chart['name'], y=df_chart['reports'], marker_color=COLOR_REPORT, 
+                                 text=df_chart['reports'], textposition='outside', texttemplate='%{y:,.0f}'))
         if mode in ["both", "queries"]:
-            fig.add_trace(go.Bar(name='Queries', x=df_chart['name'], y=df_chart['queries'], marker_color=COLOR_QUERY))
-        fig.update_layout(barmode='group', title="Distribution by Level", xaxis_title="", yaxis_title="Count")
+            fig.add_trace(go.Bar(name='Queries', x=df_chart['name'], y=df_chart['queries'], marker_color=COLOR_QUERY,
+                                 text=df_chart['queries'], textposition='outside', texttemplate='%{y:,.0f}'))
+        fig.update_layout(barmode='group', title="Distribution by Level", xaxis_title="", yaxis_title="Count",
+                          yaxis=dict(tickformat=",.0f"), hovermode="x unified")
         return fig
 
     def chart_trends(data, mode="both"):
@@ -539,10 +669,11 @@ def Report():
         if df_chart.empty: return None
         fig = go.Figure()
         if mode in ["both", "reports"]:
-            fig.add_trace(go.Scatter(name='Reports', x=df_chart['month'], y=df_chart['reports'], line=dict(color=COLOR_REPORT, width=3)))
+            fig.add_trace(go.Scatter(name='Reports', x=df_chart['month'], y=df_chart['reports'], line=dict(color=COLOR_REPORT, width=3), hovertemplate='%{y:,.0f}'))
         if mode in ["both", "queries"]:
-            fig.add_trace(go.Scatter(name='Queries', x=df_chart['month'], y=df_chart['queries'], line=dict(color=COLOR_QUERY, width=3)))
-        fig.update_layout(title="Monthly Trends", xaxis_title="Month", yaxis_title="Count")
+            fig.add_trace(go.Scatter(name='Queries', x=df_chart['month'], y=df_chart['queries'], line=dict(color=COLOR_QUERY, width=3), hovertemplate='%{y:,.0f}'))
+        fig.update_layout(title="Monthly Trends", xaxis_title="Month", yaxis_title="Count", 
+                          yaxis=dict(tickformat=",.0f"), hovermode="x unified")
         return fig
         
     def chart_yearly(data, mode="both"):
@@ -550,25 +681,41 @@ def Report():
         if df_chart.empty: return None
         fig = go.Figure()
         if mode in ["both", "reports"]:
-            fig.add_trace(go.Bar(name='Reports', x=df_chart['year'], y=df_chart['reports'], marker_color=COLOR_REPORT))
+            fig.add_trace(go.Bar(name='Reports', x=df_chart['year'], y=df_chart['reports'], marker_color=COLOR_REPORT,
+                                 text=df_chart['reports'], textposition='outside', texttemplate='%{y:,.0f}'))
         if mode in ["both", "queries"]:
-            fig.add_trace(go.Bar(name='Queries', x=df_chart['year'], y=df_chart['queries'], marker_color=COLOR_QUERY))
-        fig.update_layout(barmode='group', title="Yearly Comparison", xaxis_title="Year", yaxis_title="Count")
+            fig.add_trace(go.Bar(name='Queries', x=df_chart['year'], y=df_chart['queries'], marker_color=COLOR_QUERY,
+                                 text=df_chart['queries'], textposition='outside', texttemplate='%{y:,.0f}'))
+        fig.update_layout(barmode='group', title="Yearly Comparison", xaxis_title="Year", yaxis_title="Count",
+                          yaxis=dict(tickformat=",.0f"), hovermode="x unified")
         return fig
         
     def chart_type_dist(data, title, color, height=None):
         df_chart = pd.DataFrame(data)
         if df_chart.empty: return None
         fig = px.bar(df_chart, x='value', y='name', orientation='h', title=title,
-                     color_discrete_sequence=[color], height=height)
-        fig.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis_title="Count", yaxis_title="")
+                     color_discrete_sequence=[color], height=height, text_auto=',.0f')
+        fig.update_traces(textposition='outside', cliponaxis=False)
+        fig.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis_title="Count", yaxis_title="",
+                          xaxis=dict(tickformat=",.0f"))
         return fig
+
+    def chart_user_top10(data):
+        df_chart = pd.DataFrame(data)
+        if df_chart.empty: return None
+        fig = px.bar(df_chart, y='user', x='count', orientation='h', title="Top 10 Most Active Users",
+                     color_discrete_sequence=["#8b5cf6"], text_auto=',.0f')
+        fig.update_traces(textposition='outside', cliponaxis=False)
+        fig.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis=dict(tickformat=",.0f"))
+        return fig
+
+
 
     # --- TAB: OVERVIEW ---
     with t_over:
         # KPIs
         k1, k2, k3, k4, k5 = st.columns(5)
-        with k1: metric_card("Total Activities", f"{s['totals']['reports'] + s['totals']['queries']:,}", COLOR_MIXED)
+        with k1: metric_card("Total Generated", f"{s['totals']['reports'] + s['totals']['queries']:,}", COLOR_MIXED)
         with k2: metric_card("Reports Generated", f"{s['totals']['reports']:,}", COLOR_REPORT)
         with k3: metric_card("Queries Generated", f"{s['totals']['queries']:,}", COLOR_QUERY)
         with k4: metric_card("Top Active Entity", f"{s['topEntities']['overall']['code']}", "#d97706")
@@ -594,8 +741,8 @@ def Report():
                 for y_data in s['monthlyComparison']:
                     year = y_data['year']
                     total_act = [r+q for r,q in zip(y_data['reports'], y_data['queries'])]
-                    fig_mc.add_trace(go.Scatter(x=MONTHS, y=total_act, name=str(year), mode='lines+markers'))
-                fig_mc.update_layout(title="Monthly Comparison (Year-over-Year)", xaxis_title="Month")
+                    fig_mc.add_trace(go.Scatter(x=MONTHS, y=total_act, name=str(year), mode='lines+markers', hovertemplate='%{y:,.0f}'))
+                fig_mc.update_layout(title="Monthly Comparison (Year-over-Year)", xaxis_title="Month", yaxis=dict(tickformat=",.0f"))
                 st.plotly_chart(fig_mc, use_container_width=True)
             else:
                 st.info("No monthly comparison data")
@@ -610,8 +757,8 @@ def Report():
         df_ent = pd.DataFrame(s['entityPerformance']).head(10)
         if not df_ent.empty:
             fig_ent = px.bar(df_ent, y='entity', x=['reports', 'queries'], orientation='h', title="Top 10 Active Entities",
-                             color_discrete_map={"reports": COLOR_REPORT, "queries": COLOR_QUERY}, barmode='stack')
-            fig_ent.update_layout(yaxis={'categoryorder':'total ascending'})
+                             color_discrete_map={"reports": COLOR_REPORT, "queries": COLOR_QUERY}, barmode='stack', text_auto=',.0f')
+            fig_ent.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis=dict(tickformat=",.0f"))
             st.plotly_chart(fig_ent, use_container_width=True)
         else:
             st.info("No entity data")
@@ -680,8 +827,8 @@ def Report():
             if s['monthlyComparison']:
                 fig_mcr = go.Figure()
                 for y_data in s['monthlyComparison']:
-                    fig_mcr.add_trace(go.Scatter(x=MONTHS, y=y_data['reports'], name=str(y_data['year']), mode='lines+markers'))
-                fig_mcr.update_layout(title="Monthly Comparison (Year-over-Year) - Reports", xaxis_title="Month") 
+                    fig_mcr.add_trace(go.Scatter(x=MONTHS, y=y_data['reports'], name=str(y_data['year']), mode='lines+markers', hovertemplate='%{y:,.0f}'))
+                fig_mcr.update_layout(title="Monthly Comparison (Year-over-Year) - Reports", xaxis_title="Month", yaxis=dict(tickformat=",.0f")) 
                 st.plotly_chart(fig_mcr, use_container_width=True)
             else:
                 st.info("No comparison data")
@@ -697,15 +844,16 @@ def Report():
             # Sort by reports descending
             df_ent_perf = df_ent_perf.sort_values('reports', ascending=False).head(10)
             fig_entr = px.bar(df_ent_perf, y='entity', x='reports', orientation='h', 
-                             title="Entities by Report Volume", color_discrete_sequence=[COLOR_REPORT])
-            fig_entr.update_layout(yaxis={'categoryorder':'total ascending'})
+                             title="Entities by Report Volume", color_discrete_sequence=[COLOR_REPORT], text_auto=',.0f')
+            fig_entr.update_traces(textposition='outside', cliponaxis=False)
+            fig_entr.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis=dict(tickformat=",.0f"))
             st.plotly_chart(fig_entr, use_container_width=True)
         else:
             st.info("No entity performance data")    
 
         st.subheader("Report performance")
         # Report Type Distribution
-        h_rep = max(400, len(s['reportTypeDistribution']) * 25)
+        h_rep = max(400, len(s['reportTypeDistribution']) * 30)
         fig_type = chart_type_dist(s['reportTypeDistribution'], "Report Type Distribution", COLOR_REPORT, height=h_rep)
         if fig_type: st.plotly_chart(fig_type, use_container_width=True)
         else: st.info("No report type data")
@@ -722,7 +870,7 @@ def Report():
             df_ir.index += 1
             st.dataframe(df_ir, use_container_width=True, height=300)
         with ir2:
-            st.caption(f"Inactive Entities (Reports Context) (Total: {len(df_inactive_ent)})")
+            st.caption(f"Inactive Entities  (Total: {len(df_inactive_ent)})")
             df_ie = df_inactive_ent.copy()
             df_ie.index += 1
             st.dataframe(df_ie, use_container_width=True, height=300)
@@ -753,8 +901,8 @@ def Report():
             if s['monthlyComparison']:
                 fig_mcq = go.Figure()
                 for y_data in s['monthlyComparison']:
-                    fig_mcq.add_trace(go.Scatter(x=MONTHS, y=y_data['queries'], name=str(y_data['year']), mode='lines+markers'))
-                fig_mcq.update_layout(title="Monthly Comparison (Year-over-Year) - Queries", xaxis_title="Month") 
+                    fig_mcq.add_trace(go.Scatter(x=MONTHS, y=y_data['queries'], name=str(y_data['year']), mode='lines+markers', hovertemplate='%{y:,.0f}'))
+                fig_mcq.update_layout(title="Monthly Comparison (Year-over-Year) - Queries", xaxis_title="Month", yaxis=dict(tickformat=",.0f")) 
                 st.plotly_chart(fig_mcq, use_container_width=True)
             else:
                 st.info("No comparison data")
@@ -770,8 +918,9 @@ def Report():
             # Sort by queries descending
             df_ent_perf_q = df_ent_perf_q.sort_values('queries', ascending=False).head(10)
             fig_entq = px.bar(df_ent_perf_q, y='entity', x='queries', orientation='h', 
-                             title="Entities by Query Volume", color_discrete_sequence=[COLOR_QUERY])
-            fig_entq.update_layout(yaxis={'categoryorder':'total ascending'})
+                             title="Entities by Query Volume", color_discrete_sequence=[COLOR_QUERY], text_auto=',.0f')
+            fig_entq.update_traces(textposition='outside', cliponaxis=False)
+            fig_entq.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis=dict(tickformat=",.0f"))
             st.plotly_chart(fig_entq, use_container_width=True)
         else:
             st.info("No entity performance data")
@@ -795,10 +944,55 @@ def Report():
             df_iq.index += 1
             st.dataframe(df_iq, use_container_width=True, height=400)
         with iq2:
-            st.caption(f"Inactive Entities (Queries Context) (Total: {len(df_inactive_ent)})")
+            st.caption(f"Inactive Entities  (Total: {len(df_inactive_ent)})")
             df_ie = df_inactive_ent.copy()
             df_ie.index += 1
             st.dataframe(df_ie, use_container_width=True, height=400)
+            
+    # --- TAB: USER ANALYTICS ---
+    with t_user:
+        # KPIs
+        u1, u2 = st.columns(2)
+        with u1: metric_card("Total Users", f"{user_s['totalActiveUsers']:,}", "#6b21a8") 
+        with u2: metric_card("Top Active User", f"{user_s['topPowerUser']['user']} ({user_s['topPowerUser']['entity']})", "#9333ea")
+        st.markdown("---")
+        
+        # Charts - Only Top 10 Users
+        if user_s['top10Users']:
+            fig_topu = chart_user_top10(user_s['top10Users'])
+            st.plotly_chart(fig_topu, use_container_width=True)
+        else:
+            st.info("No user activity data")
+                
+        # User Detail Table
+        st.subheader("User Statistics")
+        df_user_table = pd.DataFrame(user_s['userTable'])
+        
+        # Create a dynamic key based on active filters to force re-render
+        # This fixes the "TypeError: Cannot read properties of undefined (reading 'get')"
+        filter_state = str([
+            st.session_state.get("report_levels", []),
+            st.session_state.get("report_entities", []),
+            st.session_state.get("report_years", []),
+            st.session_state.get("report_months", []),
+            st.session_state.get("filter_types_combined", [])
+        ])
+
+        if not df_user_table.empty:
+            df_user_table.index += 1
+            st.dataframe(
+                df_user_table, 
+                use_container_width=True, 
+                height=600,
+                column_config={
+                    "Total Queries": st.column_config.NumberColumn(format="%d"),
+                    "Total Reports": st.column_config.NumberColumn(format="%d"),
+                    "Total Activities": st.column_config.NumberColumn(format="%d")
+                },
+                key=f"user_stats_table_{filter_state}"
+            )
+        else:
+            st.info("No user details available")
 
     # --- TAB: RAW DATA ---
     with t_data:

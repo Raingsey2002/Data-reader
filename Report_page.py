@@ -653,15 +653,26 @@ def Report():
         df_chart = pd.DataFrame(data)
         if df_chart.empty: return None
         
+        # Calculate max value to set axis range with headroom
+        max_val = 0
+        if mode in ["both", "reports"] and "reports" in df_chart.columns:
+            max_val = max(max_val, df_chart["reports"].max())
+        if mode in ["both", "queries"] and "queries" in df_chart.columns:
+            max_val = max(max_val, df_chart["queries"].max())
+            
         fig = go.Figure()
         if mode in ["both", "reports"]:
             fig.add_trace(go.Bar(name='Reports', x=df_chart['name'], y=df_chart['reports'], marker_color=COLOR_REPORT, 
-                                 text=df_chart['reports'], textposition='outside', texttemplate='%{y:,.0f}'))
+                                 text=df_chart['reports'], textposition='outside', texttemplate='%{y:,.0f}', cliponaxis=False))
         if mode in ["both", "queries"]:
             fig.add_trace(go.Bar(name='Queries', x=df_chart['name'], y=df_chart['queries'], marker_color=COLOR_QUERY,
-                                 text=df_chart['queries'], textposition='outside', texttemplate='%{y:,.0f}'))
+                                 text=df_chart['queries'], textposition='outside', texttemplate='%{y:,.0f}', cliponaxis=False))
+        
+        # Add 20% headroom for labels
+        y_range = [0, max_val * 1.2] if max_val > 0 else None
+
         fig.update_layout(barmode='group', title="Distribution by Level", xaxis_title="", yaxis_title="Count",
-                          yaxis=dict(tickformat=",.0f"), hovermode="x unified")
+                          yaxis=dict(tickformat=",.0f", range=y_range), hovermode="x unified")
         return fig
 
     def chart_trends(data, mode="both"):
@@ -679,25 +690,43 @@ def Report():
     def chart_yearly(data, mode="both"):
         df_chart = pd.DataFrame(data)
         if df_chart.empty: return None
+
+        # Calculate max value to set axis range with headroom
+        max_val = 0
+        if mode in ["both", "reports"] and "reports" in df_chart.columns:
+            max_val = max(max_val, df_chart["reports"].max())
+        if mode in ["both", "queries"] and "queries" in df_chart.columns:
+            max_val = max(max_val, df_chart["queries"].max())
+            
         fig = go.Figure()
         if mode in ["both", "reports"]:
             fig.add_trace(go.Bar(name='Reports', x=df_chart['year'], y=df_chart['reports'], marker_color=COLOR_REPORT,
-                                 text=df_chart['reports'], textposition='outside', texttemplate='%{y:,.0f}'))
+                                 text=df_chart['reports'], textposition='outside', texttemplate='%{y:,.0f}', cliponaxis=False))
         if mode in ["both", "queries"]:
             fig.add_trace(go.Bar(name='Queries', x=df_chart['year'], y=df_chart['queries'], marker_color=COLOR_QUERY,
-                                 text=df_chart['queries'], textposition='outside', texttemplate='%{y:,.0f}'))
+                                 text=df_chart['queries'], textposition='outside', texttemplate='%{y:,.0f}', cliponaxis=False))
+        
+        # Add 20% headroom for labels
+        y_range = [0, max_val * 1.2] if max_val > 0 else None
+
         fig.update_layout(barmode='group', title="Yearly Comparison", xaxis_title="Year", yaxis_title="Count",
-                          yaxis=dict(tickformat=",.0f"), hovermode="x unified")
+                          xaxis=dict(type='category'), # Force categorical axis to avoid decimals (e.g. 2023.5)
+                          yaxis=dict(tickformat=",.0f", range=y_range), hovermode="x unified")
         return fig
         
     def chart_type_dist(data, title, color, height=None):
         df_chart = pd.DataFrame(data)
         if df_chart.empty: return None
+        
+        # Calculate max value to set axis range with headroom
+        max_val = df_chart['value'].max()
+        x_range = [0, max_val * 1.2] if max_val > 0 else None
+        
         fig = px.bar(df_chart, x='value', y='name', orientation='h', title=title,
                      color_discrete_sequence=[color], height=height, text_auto=',.0f')
         fig.update_traces(textposition='outside', cliponaxis=False)
         fig.update_layout(yaxis={'categoryorder':'total ascending'}, xaxis_title="Count", yaxis_title="",
-                          xaxis=dict(tickformat=",.0f"))
+                          xaxis=dict(tickformat=",.0f", range=x_range))
         return fig
 
     def chart_user_top10(data):

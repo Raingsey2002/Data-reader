@@ -91,6 +91,12 @@ def FmisEntity():
             font-weight: 600 !important;
             color: {TEXT_COLOR} !important;
         }}
+
+        /* Hide expander icon elements to prevent fallback text like
+           "keyboard_arrow_right" appearing when icon fonts fail to load */
+        div[data-testid="stExpander"] div[role="button"] > *:not(:last-child) {{
+            display: none !important;
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -309,31 +315,31 @@ def FmisEntity():
         for _, bu_row in business_units.iterrows():
             bu_code = bu_row['BUSINESS_UNIT']
             bu_desc = bu_row['BU_Description']
-            
+
             # Elegant expander card
             with st.expander(f"**{bu_code} - {bu_desc}**", expanded=False):
                 # Get operating units for this business unit
                 ou_df = filtered_df[filtered_df['BUSINESS_UNIT'] == bu_code][['OPERATING_UNIT', 'DESCRLONG_ENG']].drop_duplicates()
-                
+
                 if not ou_df.empty:
                     st.markdown(
-                        f"<div style='color:{TEXT_COLOR}; font-weight:600; margin-bottom:12px; font-size: 15px;'>Operating Units</div>", 
+                        f"<div style='color:{TEXT_COLOR}; font-weight:600; margin-bottom:12px; font-size: 15px;'>Operating Units</div>",
                         unsafe_allow_html=True
                     )
-                    
+
                     # Display operating units in elegant cards
                     cols = st.columns(2)
                     for i, (_, ou_row) in enumerate(ou_df.iterrows()):
                         with cols[i % 2]:
                             st.markdown(
                                 f"""
-                                <div style="padding: 16px; margin: 8px 0; background: {CARD_COLOR}; 
-                                border-radius: 8px; border-left: 4px solid {ACCENT_COLOR}; 
+                                <div style="padding: 16px; margin: 8px 0; background: {CARD_COLOR};
+                                border-radius: 8px; border-left: 4px solid {ACCENT_COLOR};
                                 border: 1px solid {BORDER_COLOR}; box-shadow: 0 2px 6px rgba(0,0,0,0.03);
                                 transition: all 0.2s;">
                                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M19 21V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V21M19 21L21 21M19 21H14M5 21L3 21M5 21H10M9 6.99998H10M9 11H10M14 6.99998H15M14 11H15M10 21V16C10 15.4477 10.4477 15 11 15H13C13.5523 15 14 15.4477 14 16V21M10 21H14" 
+                                            <path d="M19 21V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V21M19 21L21 21M19 21H14M5 21L3 21M5 21H10M9 6.99998H10M9 11H10M14 6.99998H15M14 11H15M10 21V16C10 15.4477 10.4477 15 11 15H13C13.5523 15 14 15.4477 14 16V21M10 21H14"
                                                   stroke="{ACCENT_COLOR}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>
                                         <div style="font-weight: 600; color: {PRIMARY_COLOR}; font-size: 15px;">

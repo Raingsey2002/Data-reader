@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 __pycache__/
 *.pyc
+=======
+.env
+__pycache__
+>>>>>>> feature-report-dashboard

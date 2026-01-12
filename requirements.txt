@@ -36,7 +36,7 @@ MarkupSafe==3.0.2
 matplotlib==3.10.3
 narwhals==1.32.0
 numpy==2.2.4
-openpyxl @ file:///private/var/folders/nz/j6p8yfhx1mv_0grj5xl4650h0000gp/T/abs_96hhik4ygv/croot/openpyxl_1721752931204/work
+openpyxl==3.1.2
 packaging==24.2
 pandas==2.2.3
 pillow==11.1.0

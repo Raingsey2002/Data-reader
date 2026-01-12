@@ -38,7 +38,7 @@ def Economic():
     # New selectbox for choosing year type
     with col2:
         year_type_options = ("ឆ្នាំបង្កើត​​", "ឆ្នាំប្រសិទ្ធភាព")
-        selected_year_type = st.selectbox("ប្រភេទឆ្នាំ", year_type_options, index=0)
+        selected_year_type = st.selectbox("ប្រភេទឆ្នាំ", year_type_options, index=1)
 
 
     # Status selection
@@ -159,7 +159,7 @@ def Economic():
                         year_display = f"{row['EFFDT_Year']}"
                         year_label = "📅 ឆ្នាំបង្កើត"
                     else:  # ឆ្នាំប្រសិទ្ធភាព
-                        year_display = f"{row['EFFDT_Year']}-2025"
+                        year_display = f"{row['EFFDT_Year']}-បច្ចុប្បន្ន"
                         year_label = "📅 កាលបរិច្ឆេទមានប្រសិទ្ធភាព"
                         
 

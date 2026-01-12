@@ -123,7 +123,7 @@ def data_reader_page():
     # New selectbox for choosing year type
     with col2:
         year_type_options = ("ឆ្នាំបង្កើត​​", "ឆ្នាំប្រសិទ្ធភាព")
-        selected_year_type = st.selectbox("ប្រភេទឆ្នាំ", year_type_options, index=0)
+        selected_year_type = st.selectbox("ប្រភេទឆ្នាំ", year_type_options, index=1)
 
 
 
@@ -195,7 +195,7 @@ def data_reader_page():
                         year_display = f"{row['EFFDT_Year']}"
                         year_label = "📅 ឆ្នាំបង្កើត"
                     else:  # ឆ្នាំប្រសិទ្ធភាព
-                        year_display = f"{row['EFFDT_Year']}-2025"
+                        year_display = f"{row['EFFDT_Year']}-បច្ចុប្បន្ន"
                         year_label = "📅 កាលបរិច្ឆេទមានប្រសិទ្ធភាព"
 
 
@@ -287,13 +287,13 @@ st.markdown(
 
 
 pages = {
-    "ទិន្នន័យមេ": [
+    "មាតិកាគណនីនៃប្លង់គណនេយ្យ": [
         st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ"),
         st.Page(Economic, title="📊  មាតិកាគណនី"),
         st.Page(Program, title="📋  កម្មវិធី"),
         st.Page(Geography, title="🌍  ភូមិសាស្រ្ត"),
     ],
-    "ទិន្នន័យអំពីប្រព័ន្ធ": [
+    "ទិន្នន័យមេ": [
          st.Page(FmisEntity, title="🏛️  អង្គភាពការងារ"),
          st.Page(UserAlias, title="👤  អ្នកប្រើប្រាស់"),
          st.Page(Report, title="📘  របាយការណ៍"),

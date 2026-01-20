@@ -1263,7 +1263,7 @@ button[data-testid="stButton-clear_filters_button"] {
                     margin=dict(l=10, r=10, t=40, b=10),
                     height=300,
                     showlegend=True,
-                    font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                    # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
                 )
                 st.plotly_chart(fig_pie_type, use_container_width=True)
             else:
@@ -1292,7 +1292,7 @@ button[data-testid="stButton-clear_filters_button"] {
                     width=chart_width,
                     margin=dict(l=10, r=10, t=40, b=120),
                     xaxis_tickangle=-45,
-                    font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                    # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
                 )
 
                 st.plotly_chart(fig_bu_bar, use_container_width=False)
@@ -1319,7 +1319,7 @@ button[data-testid="stButton-clear_filters_button"] {
                     margin=dict(l=10, r=10, t=40, b=10), 
                     height=320,
                     xaxis_tickangle=-45,
-                    font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                    # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
                 )
                 st.plotly_chart(fig_bar_vendor, use_container_width=True)
             else:
@@ -1341,7 +1341,7 @@ button[data-testid="stButton-clear_filters_button"] {
                 fig_line.update_layout(
                     margin=dict(l=10, r=10, t=40, b=10),
                     height=320,
-                    font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                    # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
                 )
                 st.plotly_chart(fig_line, use_container_width=True)
             else:
@@ -1375,13 +1375,13 @@ button[data-testid="stButton-clear_filters_button"] {
             }
         )
         
-        st.markdown("""
-        <style>
-            [data-testid="stDataFrame"] {
-                font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-            }
-        </style>
-        """, unsafe_allow_html=True)
+        # st.markdown("""
+        # <style>
+        #     [data-testid="stDataFrame"] {
+        #         font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+        #     }
+        # </style>
+        # """, unsafe_allow_html=True)
 
         
         # Format 'Amount' column for display
@@ -1428,7 +1428,7 @@ button[data-testid="stButton-clear_filters_button"] {
                 fig_count_compare.update_layout(
                     showlegend=False,
                     margin=dict(t=40),
-                    font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                    # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
                 )
                 st.plotly_chart(fig_count_compare, use_container_width=True)
             with c_amount:
@@ -1472,7 +1472,7 @@ button[data-testid="stButton-clear_filters_button"] {
                                 cmid=bu_po_amount["Amount"].mean(),
                                 line=dict(color="white", width=1.5)
                             ),
-                            textfont=dict(size=12, family="Khmer OS Siemreap, Siemreap, Arial"),
+                            # textfont=dict(size=12, family="Khmer OS Siemreap, Siemreap, Arial"),
                             hovertemplate=(
                                 "<b>%{label}</b><br>"
                                 "<b>Amount:</b> ៛%{value:,.0f}<br>"
@@ -1598,7 +1598,7 @@ button[data-testid="stButton-clear_filters_button"] {
             fig_bu_stacked.update_layout(
                 xaxis_tickangle=-45,
                 title_font_size=19,
-                font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
             )
 
             st.plotly_chart(fig_bu_stacked, use_container_width=True)
@@ -1622,7 +1622,7 @@ button[data-testid="stButton-clear_filters_button"] {
             )
             fig_yearly_analysis.update_traces(texttemplate='៛%{text:,.0f}', textposition='inside')
             fig_yearly_analysis.update_layout(
-                font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif"),
+                # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif"),
                 xaxis=dict(type="category")
             )
             st.plotly_chart(fig_yearly_analysis, use_container_width=True)
@@ -1657,13 +1657,13 @@ button[data-testid="stButton-clear_filters_button"] {
                 }
             )
             
-            st.markdown("""
-            <style>
-                [data-testid="stDataFrame"] {
-                    font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
-                }
-            </style>
-            """, unsafe_allow_html=True)
+            # st.markdown("""
+            # <style>
+            #     [data-testid="stDataFrame"] {
+            #         font-family: 'Khmer OS Siemreap', 'Siemreap', sans-serif !important;
+            #     }
+            # </style>
+            # """, unsafe_allow_html=True)
 
             st.markdown("---")
 
@@ -1732,7 +1732,7 @@ button[data-testid="stButton-clear_filters_button"] {
                     plot_bgcolor="white",
                     paper_bgcolor="white",
                     margin=dict(l=160, r=40, t=60, b=40),
-                    font=dict(size=13, family="Khmer OS Siemreap, Siemreap, sans-serif"),
+                    # font=dict(size=13, family="Khmer OS Siemreap, Siemreap, sans-serif"),
                     height=400
                 )
 
@@ -1771,7 +1771,7 @@ button[data-testid="stButton-clear_filters_button"] {
                 xaxis_tickangle=-45,
                 title_font_size=19,
                 margin=dict(l=10, r=10, t=40, b=120),
-                font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
             )
 
             st.plotly_chart(fig_vendor_po_bar, use_container_width=True)
@@ -1819,7 +1819,7 @@ button[data-testid="stButton-clear_filters_button"] {
                 )
                 fig_top_vendors_by_year.update_layout(
                     xaxis_tickangle=-30,
-                    font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
+                    # font=dict(family="Khmer OS Siemreap, Siemreap, sans-serif")
                 )
                 st.plotly_chart(fig_top_vendors_by_year, use_container_width=True)
 
@@ -1923,13 +1923,13 @@ button[data-testid="stButton-clear_filters_button"] {
                     hide_index=True,
                 )
                 
-                st.markdown("""
-                <style>
-                    [data-testid="stDataFrame"] {
-                        font-family: 'Khmer OS Siemreap', 'Siemreap' !important;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
+                # st.markdown("""
+                # <style>
+                #     [data-testid="stDataFrame"] {
+                #         font-family: 'Khmer OS Siemreap', 'Siemreap' !important;
+                #     }
+                # </style>
+                # """, unsafe_allow_html=True)
 
                 # All vendor comparison
                 st.markdown("#### Vendors YoY Comparison")

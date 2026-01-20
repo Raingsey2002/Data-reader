@@ -150,6 +150,14 @@ def apply_custom_styles():
     </style>
     """, unsafe_allow_html=True)
 
+
+# Load data
+df_su = pd.read_excel("Excel files/User Alias Data(Dec) from prod.xlsx")
+    
+
+
+
+
 def create_metric_card(title, value, subtext=None, delta=None, delta_color="normal"):
     """Create a professional metric card with optional delta indicator"""
     delta_html = ""
@@ -218,57 +226,48 @@ def show():
         # ======================
         st.markdown('<div class="section-header">Executive Summary</div>', unsafe_allow_html=True)
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            total_users = len(df)
+            total_users = int(df_su["សរុប"].sum())
             st.markdown(create_metric_card(
                 "Total Users", 
                 f"{total_users:,}",
-                "Across all departments",
-                "2.5% MoM",
-                "positive"
+                # "Across all departments",
+                # "2.5% MoM",
+                # "positive"
             ), unsafe_allow_html=True)
         
         with col2:
-            active_users = len(df[df['Status'] == 'Active']) if 'Status' in df.columns else 0
+            # active_users = len(df[df['Status'] == 'Active']) if 'Status' in df.columns else 0
+            active_users = int(df_su["សកម្ម"].sum())
             st.markdown(create_metric_card(
                 "Active Users", 
                 f"{active_users:,}",
-                f"{(active_users/total_users*100 if total_users > 0 else 0):.1f}% of total",
-                "1.2% MoM",
-                "positive"
+                # f"{(active_users/total_users*100 if total_users > 0 else 0):.1f}% of total",
+                # "1.2% MoM",
+                # "positive"
             ), unsafe_allow_html=True)
         
         with col3:
-            departments = len(df_dept)
+            inactive90 = int(df_su["អសកម្ម"].sum())
             st.markdown(create_metric_card(
-                "Entitys", 
-                departments,
-                f"{(df_dept['Users'].sum()/departments if departments > 0 else 0):.0f} avg users",
-                "No change",
-                "normal"
+                "Inactive Users (90 Days)", 
+                inactive90,
+                # f"{(df_dept['Users'].sum()/departments if departments > 0 else 0):.0f} avg users",
+                # "No change",
+                # "normal"
             ), unsafe_allow_html=True)
-        
-        # with col4:
-        #     if 'Z_CREATEDTTM' in df.columns:
-        #         try:
-        #             df['CREATED_DATE'] = pd.to_datetime(df['Z_CREATEDTTM'], format='%d-%b-%y %I.%M.%S.%f %p', errors='coerce')
-        #             new_users = len(df[df['CREATED_DATE'] >= pd.Timestamp.now() - pd.DateOffset(months=1)])
-        #             st.markdown(create_metric_card(
-        #                 "New Users (30d)", 
-        #                 new_users,
-        #                 f"{(new_users/total_users*100 if total_users > 0 else 0):.1f}% of total",
-        #                 f"{(new_users - 15)} vs prev month" if new_users else "N/A",
-        #                 "positive" if new_users > 15 else "negative" if new_users < 15 else "normal"
-        #             ), unsafe_allow_html=True)
-        #         except:
-        #             st.markdown(create_metric_card(
-        #                 "New Users (30d)", 
-        #                 "N/A",
-        #                 "Data unavailable",
-        #             ), unsafe_allow_html=True)
-        
+           
+        with col4:
+            Inactive = int(df_su["ឈប់ប្រើប្រាស់"].sum())
+            st.markdown(create_metric_card(
+                "Inactive", 
+                Inactive,
+                # "Users no longer active",
+                # "0.5% MoM",
+                # "negative"
+            ), unsafe_allow_html=True)
         # ======================
         # USER DISTRIBUTION ANALYSIS
         # ======================
@@ -279,20 +278,132 @@ def show():
         with tab1:
             col1, col2 = st.columns([2, 1], gap="medium")
             
+            # with col1:
+            #     with st.container():
+            #         st.markdown("#### Entity Distribution")
+            #         # Count entities
+            #         enti_counts = (
+            #             df_su['ENTITY']
+            #             .value_counts()
+            #             .reset_index()
+            #         )
+            #         enti_counts.columns = ['ENTITY', 'COUNT']
+            #         # top_entities = entity_counts.head(10)
+            #         # Create a treemap for department visualization
+            #         fig_treemap = px.treemap(
+            #             enti_counts,
+            #             path=['ENTITY'],
+            #             values='COUNT',
+            #             color='COUNT',
+            #             color_continuous_scale='Blues',
+            #             hover_data=['COUNT'],
+            #             height=400
+            #         )
+            #         fig_treemap.update_layout(
+            #             margin=dict(t=0, l=0, r=0, b=0),
+            #             paper_bgcolor='rgba(0,0,0,0)',
+            #             plot_bgcolor='rgba(0,0,0,0)',
+            #             font=dict(family="Inter", size=12),
+            #             hoverlabel=dict(
+            #                 bgcolor="white",
+            #                 font_size=12,
+            #                 font_family="Inter"
+            #             )
+            #         )
+            #         st.plotly_chart(fig_treemap, use_container_width=True)
+            
+            # with col2:
+            #     with st.container():
+            #         st.markdown("#### Top 5 Entities")
+
+            #         # Count entities
+            #         entity_counts = (
+            #             df_su['ENTITY']
+            #             .value_counts()
+            #             .reset_index()
+            #         )
+            #         entity_counts.columns = ['ENTITY', 'COUNT']
+            #         top_entities = entity_counts.head(5)
+
+            #         fig = go.Figure()
+            #         fig.add_trace(go.Bar(
+            #             y=top_entities['ENTITY'],
+            #             x=top_entities['COUNT'],
+            #             orientation='h',
+            #             marker=dict(
+            #                 color="#3498db",
+            #                 line=dict(color="#2980b9", width=1)
+            #             ),
+            #             text=top_entities['COUNT'],
+            #             textposition='auto',
+            #             textfont=dict(family="Inter", size=12, color="white")
+            #         ))
+
+            #         fig.update_layout(
+            #             height=350,
+            #             margin=dict(l=0, r=0, t=0, b=0),
+            #             xaxis=dict(showgrid=False, visible=False),
+            #             yaxis=dict(autorange="reversed"),
+            #             plot_bgcolor='rgba(0,0,0,0)',
+            #             paper_bgcolor='rgba(0,0,0,0)',
+            #             font=dict(family="Inter", size=12)
+            #         )
+
+            #         st.plotly_chart(fig, use_container_width=True)
+
+
+
             with col1:
                 with st.container():
                     st.markdown("#### Entity Distribution")
-                    
-                    # Create a treemap for department visualization
+
+                    # =========================
+                    # PREPARE ENTITY DATA
+                    # =========================
+                    entity_counts = (
+                        df_su['ENTITY']
+                        .value_counts()
+                        .reset_index()
+                    )
+                    entity_counts.columns = ['ENTITY', 'COUNT']
+
+                    entity_desc = (
+                        df_su
+                        .groupby('ENTITY')['អង្គភាពប្រើប្រាស់']
+                        .unique()
+                        .reset_index()
+                    )
+
+                    entity_desc['DESCRIPTION'] = entity_desc['អង្គភាពប្រើប្រាស់'].apply(
+                        lambda x: ', '.join(x)
+                    )
+
+                    entity_final = entity_counts.merge(
+                        entity_desc[['ENTITY', 'DESCRIPTION']],
+                        on='ENTITY',
+                        how='left'
+                    )
+
+                    # =========================
+                    # TREEMAP
+                    # =========================
                     fig_treemap = px.treemap(
-                        df_dept,
-                        path=['Department'],
-                        values='Users',
-                        color='Users',
+                        entity_final,
+                        path=['ENTITY'],
+                        values='COUNT',
+                        color='COUNT',
+                        custom_data=['DESCRIPTION'],
                         color_continuous_scale='Blues',
-                        hover_data=['Users'],
                         height=400
                     )
+
+                    fig_treemap.update_traces(
+                        hovertemplate=
+                            "<b>%{label}</b><br>" +
+                            "Count: %{value}<br>" +
+                            "Description:<br>%{customdata[0]}<extra></extra>"
+                    )
+
                     fig_treemap.update_layout(
                         margin=dict(t=0, l=0, r=0, b=0),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -304,32 +415,44 @@ def show():
                             font_family="Inter"
                         )
                     )
+
                     st.plotly_chart(fig_treemap, use_container_width=True)
-            
+
+
             with col2:
                 with st.container():
-                    st.markdown("#### Top Entitys")
-                    
-                    # Show top departments in a table with progress bars
-                    top_depts = df_dept.sort_values('Users', ascending=False).head(5)
-                    
-                    # Create a custom bar chart with progress bars
+                    st.markdown("#### Top 5 Entities")
+
+                    top_entities = entity_final.head(5)
+
+                    # =========================
+                    # HORIZONTAL BAR CHART
+                    # =========================
                     fig = go.Figure()
                     fig.add_trace(go.Bar(
-                        y=top_depts['Department'],
-                        x=top_depts['Users'],
+                        y=top_entities['ENTITY'],
+                        x=top_entities['COUNT'],
                         orientation='h',
+                        customdata=top_entities['DESCRIPTION'],
                         marker=dict(
                             color="#3498db",
                             line=dict(color="#2980b9", width=1)
                         ),
-                        text=top_depts['Users'],
+                        text=top_entities['COUNT'],
                         textposition='auto',
-                        textfont=dict(family="Inter", size=12, color="white")
+                        textfont=dict(
+                            family="Inter",
+                            size=12,
+                            color="white"
+                        ),
+                        hovertemplate=
+                            "<b>%{y}</b><br>" +
+                            "Count: %{x}<br>" +
+                            "Description:<br>%{customdata}<extra></extra>"
                     ))
-                    
+
                     fig.update_layout(
-                        height=400,
+                        height=350,
                         margin=dict(l=0, r=0, t=0, b=0),
                         xaxis=dict(showgrid=False, visible=False),
                         yaxis=dict(autorange="reversed"),
@@ -337,123 +460,645 @@ def show():
                         paper_bgcolor='rgba(0,0,0,0)',
                         font=dict(family="Inter", size=12)
                     )
-                    
+
                     st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
+
+            # with col2:
+            #     with st.container():
+            #         st.markdown("#### Top Entitys")
                     
-                    # Department summary stats
-                    st.markdown("""
-                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #e0e0e0;">
-                        <p style="font-weight: 600; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; color: #2c3e50;">Entity Insights</p>
-                        <ul style="margin: 0; padding-left: 1.2rem; color: #7f8c8d; font-size: 0.9rem; font-family: 'Inter', sans-serif;">
-                            <li>LM-ABE has the most users (106)</li>
-                            <li>TOP has the fewest users (1)</li>
-                            <li>Average department size: 30 users</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
+            #         # Show top departments in a table with progress bars
+            #         top_depts = df_dept.sort_values('ENTITY', ascending=False).head(5)
+                    
+            #         # Create a custom bar chart with progress bars
+            #         fig = go.Figure()
+            #         fig.add_trace(go.Bar(
+            #             y=top_depts['ENTITY'],
+            #             x=top_depts['ENTITY'].count,
+            #             orientation='h',
+            #             marker=dict(
+            #                 color="#3498db",
+            #                 line=dict(color="#2980b9", width=1)
+            #             ),
+            #             text=top_depts['ENTITY'],
+            #             textposition='auto',
+            #             textfont=dict(family="Inter", size=12, color="white")
+            #         ))
+                    
+            #         fig.update_layout(
+            #             height=400,
+            #             margin=dict(l=0, r=0, t=0, b=0),
+            #             xaxis=dict(showgrid=False, visible=False),
+            #             yaxis=dict(autorange="reversed"),
+            #             plot_bgcolor='rgba(0,0,0,0)',
+            #             paper_bgcolor='rgba(0,0,0,0)',
+            #             font=dict(family="Inter", size=12)
+            #         )
+                    
+            #         st.plotly_chart(fig, use_container_width=True)
+                    
+                    # # Department summary stats
+                    # st.markdown("""
+                    # <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #e0e0e0;">
+                    #     <p style="font-weight: 600; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; color: #2c3e50;">Entity Insights</p>
+                    #     <ul style="margin: 0; padding-left: 1.2rem; color: #7f8c8d; font-size: 0.9rem; font-family: 'Inter', sans-serif;">
+                    #         <li>LM-ABE has the most users (106)</li>
+                    #         <li>TOP has the fewest users (1)</li>
+                    #         <li>Average department size: 30 users</li>
+                    #     </ul>
+                    # </div>
+                    # """, unsafe_allow_html=True)
         
         with tab2:
-            col1, col2 = st.columns([1, 1], gap="medium")
+            col1, col2 = st.columns([1, 1.3], gap="medium")
             
-            with col1:
-                with st.container():
-                    st.markdown("#### User Status Composition")
-                    if 'Status' in df.columns:
-                        status_counts = df['Status'].value_counts().reset_index()
-                        status_counts.columns = ['Status', 'Count']
+            # with col1:
+            #     with st.container():
+            #         st.markdown("#### User Status Composition")
+            #         if 'Status' in df.columns:
+            #             status_counts = df['Status'].value_counts().reset_index()
+            #             status_counts.columns = ['Status', 'Count']
                         
-                        # Create a donut chart with modern styling
-                        fig = px.pie(
-                            status_counts,
-                            values='Count',
-                            names='Status',
-                            hole=0.6,
-                            color_discrete_sequence=['#3498db', '#e74c3c', '#2ecc71'],
-                            height=400
-                        )
+            #             # Create a donut chart with modern styling
+            #             fig = px.pie(
+            #                 status_counts,
+            #                 values='Count',
+            #                 names='Status',
+            #                 hole=0.6,
+            #                 color_discrete_sequence=['#3498db', '#e74c3c', '#2ecc71'],
+            #                 height=400
+            #             )
                         
-                        fig.update_traces(
-                            textposition='inside',
-                            textinfo='percent+label',
-                            marker=dict(line=dict(color='white', width=1)),
-                            pull=[0.1 if i == status_counts['Count'].idxmax() else 0 for i in status_counts.index],
-                            textfont=dict(family="Inter", size=12)
-                        )
+            #             fig.update_traces(
+            #                 textposition='inside',
+            #                 textinfo='percent+label',
+            #                 marker=dict(line=dict(color='white', width=1)),
+            #                 pull=[0.1 if i == status_counts['Count'].idxmax() else 0 for i in status_counts.index],
+            #                 textfont=dict(family="Inter", size=12)
+            #             )
                         
-                        fig.update_layout(
-                            showlegend=False,
-                            margin=dict(t=0, b=0, l=0, r=0),
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            font=dict(family="Inter", size=12),
-                            annotations=[dict(
-                                text=f"Total<br>{sum(status_counts['Count'])}",
-                                x=0.5, y=0.5,
-                                font_size=18,
-                                showarrow=False,
-                                font_family="Inter"
-                            )]
-                        )
+            #             fig.update_layout(
+            #                 showlegend=False,
+            #                 margin=dict(t=0, b=0, l=0, r=0),
+            #                 paper_bgcolor='rgba(0,0,0,0)',
+            #                 font=dict(family="Inter", size=12),
+            #                 annotations=[dict(
+            #                     text=f"Total<br>{sum(status_counts['Count'])}",
+            #                     x=0.5, y=0.5,
+            #                     font_size=18,
+            #                     showarrow=False,
+            #                     font_family="Inter"
+            #                 )]
+            #             )
                         
-                        st.plotly_chart(fig, use_container_width=True)
-            
+            #             st.plotly_chart(fig, use_container_width=True)
+                
+        with col1:
+            with st.container():
+                st.markdown("#### User Status Composition")
+
+                # Prepare status data from column sums
+                status_data = {
+                    "Status": [
+                        "Active",
+                        "Inactive",
+                        "Inactive 90 Days"
+                    ],
+                    "Count": [
+                        df_su['សកម្ម'].sum(),
+                        df_su['ឈប់ប្រើប្រាស់'].sum(),
+                        df_su['អសកម្ម'].sum()
+                    ]
+                }
+
+                status_counts = pd.DataFrame(status_data)
+
+                # Create donut chart
+                fig = px.pie(
+                    status_counts,
+                    values='Count',
+                    names='Status',
+                    hole=0.6,
+                    height=400,
+                    color_discrete_sequence=['#3498db', '#e74c3c', '#2ecc71'],
+                )
+
+                fig.update_traces(
+                    textposition='inside',
+                    textinfo='percent+label',
+                    marker=dict(line=dict(color='white', width=1)),
+                    pull=[0.08, 0.08, 0.08],
+                    textfont=dict(family="Inter", size=12)
+                )
+
+                fig.update_layout(
+                    showlegend=False,
+                    margin=dict(t=0, b=0, l=0, r=0),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(family="Inter", size=12),
+                    annotations=[dict(
+                        text=f"Total<br>{status_counts['Count'].sum()}",
+                        x=0.5, y=0.5,
+                        font_size=18,
+                        showarrow=False,
+                        font_family="Inter"
+                    )]
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+
+
+
+
+
             with col2:
                 with st.container():
-                    st.markdown("#### Status Over Time")
+
+                    # df_melted = df_su.melt(
+                    #     id_vars="អង្គភាពប្រើប្រាស់",
+                    #     value_vars=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                    #     var_name="Status",
+                    #     value_name="Users"
+                    # )
+
+                    # fig_bar = px.bar(
+                    #     df_melted,
+                    #     x="អង្គភាពប្រើប្រាស់",
+                    #     y="Users",
+                    #     color="Status",
+                    #     barmode="stack",
+                    #     height=400,
+                    #     color_discrete_map={
+                    #         "សកម្ម": "#2ecc71",
+                    #         "ឈប់ប្រើប្រាស់": "#e74c3c",
+                    #         "អសកម្ម": "#f1c40f"
+                    #     }
+                    # )
+
+                    # fig_bar.update_layout(
+                    #     xaxis_title="Organization",
+                    #     yaxis_title="Number of Users",
+                    #     legend_title="User Status",
+                    #     margin=dict(t=30, b=30)
+                    # )
+
+                    # st.plotly_chart(fig_bar, use_container_width=True)
+                    # Melt the data for stacked bar chart
+                    # df_melted = df_su.melt(
+                    #     id_vars="អង្គភាពប្រើប្រាស់",
+                    #     value_vars=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                    #     var_name="Status",
+                    #     value_name="Users"
+                    # )
+
+                    # # Create stacked bar chart with theme color
+                    # fig_bar = px.bar(
+                    #     df_melted,
+                    #     x="អង្គភាពប្រើប្រាស់",
+                    #     y="Users",
+                    #     color="Status",
+                    #     barmode="stack",
+                    #     height=400,
+                    #     color_discrete_map={
+                    #         "សកម្ម": "#3498db",  # Your theme color for active users
+                    #         "ឈប់ប្រើប្រាស់": "#e74c3c",  # Red for stopped
+                    #         "អសកម្ម": "#f39c12"  # Orange for inactive
+                    #     }
+                    # )
+
+                    # # Add count values on bars
+                    # fig_bar.update_traces(
+                    #     texttemplate='%{y}',
+                    #     textposition='inside',
+                    #     textfont=dict(
+                    #         color='white',
+                    #         size=11
+                    #     ),
+                    #     marker_line_width=0.5,
+                    #     marker_line_color='white'
+                    # )
+
+                    # # Update layout for clean appearance
+                    # fig_bar.update_layout(
+                    #     xaxis_title="អង្គភាពប្រើប្រាស់",
+                    #     yaxis_title="ចំនួនអ្នកប្រើប្រាស់",
+                    #     legend_title="ស្ថានភាព",
+                    #     margin=dict(t=30, b=30, l=0, r=0),
+                    #     plot_bgcolor='white',
+                    #     paper_bgcolor='white',
+                    #     font=dict(
+                    #         family='Arial, sans-serif',
+                    #         size=12,
+                    #         color='#2c3e50'
+                    #     ),
+                    #     xaxis=dict(
+                    #         title_font=dict(size=14),
+                    #         tickfont=dict(size=11),
+                    #         showgrid=False,
+                    #         linecolor='lightgray',
+                    #         tickangle=0 if len(df_melted["អង្គភាពប្រើប្រាស់"].unique()) <= 10 else -45
+                    #     ),
+                    #     yaxis=dict(
+                    #         title_font=dict(size=14),
+                    #         tickfont=dict(size=11),
+                    #         gridcolor='whitesmoke',
+                    #         linecolor='lightgray'
+                    #     ),
+                    #     legend=dict(
+                    #         title_font=dict(size=12),
+                    #         font=dict(size=11),
+                    #         orientation="h",
+                    #         yanchor="bottom",
+                    #         y=1.02,
+                    #         xanchor="right",
+                    #         x=1,
+                    #         bgcolor='rgba(255, 255, 255, 0.8)',
+                    #         bordercolor='lightgray',
+                    #         borderwidth=1
+                    #     ),
+                    #     hovermode="x unified"
+                    # )
+
+                    # # Customize hover information
+                    # fig_bar.update_traces(
+                    #     hovertemplate='<b>%{x}</b><br>' +
+                    #                 'ស្ថានភាព: %{data.name}<br>' +
+                    #                 'ចំនួន: %{y}<br>' +
+                    #                 '<extra></extra>'
+                    # )
+
+                    # st.plotly_chart(fig_bar, use_container_width=True)
+            
+# Melt the data for stacked bar chart
+                    # df_melted = df_su.melt(
+                    #     id_vars="អង្គភាពប្រើប្រាស់",
+                    #     value_vars=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                    #     var_name="Status",
+                    #     value_name="Users"
+                    # )
+
+                    # # Create stacked bar chart with theme color
+                    # fig_bar = px.bar(
+                    #     df_melted,
+                    #     x="អង្គភាពប្រើប្រាស់",
+                    #     y="Users",
+                    #     color="Status",
+                    #     barmode="stack",
+                    #     height=400,
+                    #     color_discrete_map={
+                    #         "សកម្ម": "#3498db",  # Your theme color
+                    #         "ឈប់ប្រើប្រាស់": "#e74c3c",
+                    #         "អសកម្ម": "#f39c12"
+                    #     }
+                    # )
+
+                    # # Add count values on each bar segment
+                    # fig_bar.update_traces(
+                    #     texttemplate='%{y}',
+                    #     textposition='inside',
+                    #     textfont=dict(
+                    #         color='white',
+                    #         size=11
+                    #     ),
+                    #     marker_line_width=0.5,
+                    #     marker_line_color='white'
+                    # )
+
+                    # # Clean layout
+                    # fig_bar.update_layout(
+                    #     xaxis_title="អង្គភាពប្រើប្រាស់",
+                    #     yaxis_title="ចំនួនអ្នកប្រើប្រាស់",
+                    #     legend_title="ស្ថានភាព",
+                    #     margin=dict(t=30, b=30, l=0, r=0),
+                    #     plot_bgcolor='white',
+                    #     paper_bgcolor='white',
+                    #     font=dict(size=12),
+                    #     xaxis=dict(
+                    #         showgrid=False,
+                    #         linecolor='lightgray'
+                    #     ),
+                    #     yaxis=dict(
+                    #         gridcolor='whitesmoke',
+                    #         linecolor='lightgray'
+                    #     ),
+                    #     legend=dict(
+                    #         orientation="h",
+                    #         yanchor="bottom",
+                    #         y=1.02,
+                    #         xanchor="right",
+                    #         x=1
+                    #     )
+                    # )
+
+                    # st.plotly_chart(fig_bar, use_container_width=True)
+                    # # Melt the data
+                    # df_melted = df_su.melt(
+                    #     id_vars="អង្គភាពប្រើប្រាស់",
+                    #     value_vars=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                    #     var_name="Status",
+                    #     value_name="Users"
+                    # )
+
+                    # # Create stacked bar chart
+                    # fig_bar = px.bar(
+                    #     df_melted,
+                    #     x="អង្គភាពប្រើប្រាស់",
+                    #     y="Users",
+                    #     color="Status",
+                    #     barmode="stack",
+                    #     height=400,
+                    #     color_discrete_map={
+                    #         "សកម្ម": "#3498db",
+                    #         "ឈប់ប្រើប្រាស់": "#e74c3c",
+                    #         "អសកម្ម": "#f39c12"
+                    #     }
+                    # )
+
+                    # # Calculate totals for each organization
+                    # totals = df_su.set_index("អង្គភាពប្រើប្រាស់")[["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"]].sum(axis=1)
+
+                    # # Add total labels on top
+                    # for i, org in enumerate(totals.index):
+                    #     fig_bar.add_annotation(
+                    #         x=org,
+                    #         y=totals.iloc[i],
+                    #         text=str(int(totals.iloc[i])),
+                    #         showarrow=False,
+                    #         yshift=10,
+                    #         font=dict(size=11, color="#2c3e50")
+                    #     )
+
+                    # # Simple clean layout
+                    # fig_bar.update_layout(
+                    #     xaxis_title="អង្គភាពប្រើប្រាស់",
+                    #     yaxis_title="ចំនួនអ្នកប្រើប្រាស់",
+                    #     legend_title="ស្ថានភាព",
+                    #     margin=dict(t=40, b=30, l=0, r=0),
+                    #     plot_bgcolor='white',
+                    #     paper_bgcolor='white',
+                    #     showlegend=True
+                    # )
+
+                    # st.plotly_chart(fig_bar, use_container_width=True)
+                    # Simple grouped bar chart
+                    # fig = px.bar(
+                    #     df_su,
+                    #     x="អង្គភាពប្រើប្រាស់",
+                    #     y=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                    #     barmode="group",
+                    #     labels={
+                    #         "value": "ចំនួនអ្នកប្រើប្រាស់",
+                    #         "variable": "ស្ថានភាព"
+                    #     },
+                    #     color_discrete_sequence=["#3498db", "#e74c3c", "#f39c12"]
+                    # )
+
+                    # # Clean styling
+                    # fig.update_traces(
+                    #     texttemplate='%{y}',
+                    #     textposition='inside',
+                    #     textfont=dict(color='white'),
+                    #     width=0.3
+                    # )
+
+                    # fig.update_layout(
+                    #     height=500,
+                    #     plot_bgcolor='white',
+                    #     paper_bgcolor='white',
+                    #     showlegend=True,
+                    #     xaxis=dict(showgrid=False),
+                    #     yaxis=dict(gridcolor='#f0f0f0')
+                    # )
+
+                    # st.plotly_chart(fig, use_container_width=True)
+
+
+                                        # Group by organization and sum the values
+                    df_grouped = df_su.groupby("អង្គភាពប្រើប្រាស់", as_index=False).agg({
+                        "សកម្ម": "sum",
+                        "ឈប់ប្រើប្រាស់": "sum", 
+                        "អសកម្ម": "sum"
+                    })
+
+                    # Add total column
+                    df_grouped['សរុប'] = df_grouped[["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"]].sum(axis=1)
+
+                    # Sort by total (optional)
+                    df_grouped = df_grouped.sort_values('សរុប', ascending=False)
+
+                    # Create grouped bar chart
+                    fig = px.bar(
+                        df_grouped,
+                        x="អង្គភាពប្រើប្រាស់",
+                        y=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                        barmode="group",
+                        labels={
+                            "value": "ចំនួនអ្នកប្រើប្រាស់",
+                            "variable": "ស្ថានភាព"
+                        },
+                        color_discrete_sequence=["#3498db", "#e74c3c", "#f39c12"]
+                    )
+
+                    # Add count values inside bars
+                    fig.update_traces(
+                        texttemplate='%{y}',
+                        textposition='inside',
+                        textfont=dict(
+                            color='white',
+                            size=11,
+                            weight='bold'
+                        ),
+                        width=0.35,
+                        marker_line_width=0.5,
+                        marker_line_color="white"
+                    )
+
+                    # Add total labels on top
+                    for i, row in df_grouped.iterrows():
+                        fig.add_annotation(
+                            x=row["អង្គភាពប្រើប្រាស់"],
+                            y=row["សរុប"],
+                            text=f"{int(row['សរុប'])}",
+                            showarrow=False,
+                            yshift=15,
+                            font=dict(size=12, color="#2c3e50", weight="bold")
+                        )
+
+                    # Calculate y-axis max with padding
+                    max_value = df_grouped[["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"]].max().max()
+                    y_max = max_value * 1.2
+
+                    # Update layout
+                    fig.update_layout(
+                        height=500,
+                        margin=dict(l=0, r=0, t=40, b=0),
+                        plot_bgcolor="white",
+                        paper_bgcolor="white",
+                        font=dict(family="Arial, sans-serif"),
+                        xaxis=dict(
+                            title_text="អង្គភាពប្រើប្រាស់",
+                            title_font=dict(size=14),
+                            tickfont=dict(size=12),
+                            showgrid=False,
+                            linecolor="lightgray"
+                        ),
+                        yaxis=dict(
+                            title_text="ចំនួនអ្នកប្រើប្រាស់",
+                            title_font=dict(size=14),
+                            tickfont=dict(size=11),
+                            gridcolor="whitesmoke",
+                            linecolor="lightgray",
+                            range=[0, y_max]
+                        ),
+                        legend=dict(
+                            title_text="ស្ថានភាព",
+                            title_font=dict(size=12),
+                            font=dict(size=11),
+                            orientation="h",
+                            yanchor="bottom",
+                            y=1.02,
+                            xanchor="center",
+                            x=0.5,
+                            bgcolor="rgba(255, 255, 255, 0.8)",
+                            bordercolor="lightgray",
+                            borderwidth=1
+                        ),
+                        bargap=0.4,
+                        bargroupgap=0.05,
+                        hovermode="x unified"
+                    )
+
+                    # Add hover template
+                    fig.update_traces(
+                        hovertemplate="<b>%{data.name}</b><br>" +
+                                    "អង្គភាព: %{x}<br>" +
+                                    "ចំនួន: %{y}<br>" +
+                                    "<extra></extra>"
+                    )
+
+                    st.plotly_chart(fig, use_container_width=True)
+                    # # Grouped bar chart
+                    # fig = px.bar(
+                    #     df_su,
+                    #     x="អង្គភាពប្រើប្រាស់",
+                    #     y=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                    #     barmode="group",
+                    #     labels={
+                    #         "value": "ចំនួនអ្នកប្រើប្រាស់",
+                    #         "variable": "ស្ថានភាព"
+                    #     },
+                    #     color_discrete_sequence=["#3498db", "#95a5a6", "#34495e"]  # Blue + neutral grays
+                    # )
+
+                    # # Add count values with better spacing
+                    # fig.update_traces(
+                    #     texttemplate='%{y}',
+                    #     textposition='outside',
+                    #     textfont=dict(size=10),  # Smaller font for labels
+                    #     width=0.25,  # Thinner bars
+                    #     marker_line_width=0.5,
+                    #     marker_line_color="white"
+                    # )
+
+                    # # Calculate max value for better y-axis range
+                    # max_value = df_su[["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"]].max().max()
+                    # y_max = max_value * 1.15  # Add 15% padding for labels
+
+                    # fig.update_layout(
+                    #     height=500,
+                    #     margin=dict(l=0, r=0, t=20, b=30),  # More bottom margin for x-labels
+                    #     plot_bgcolor="white",
+                    #     paper_bgcolor="white",
+                    #     xaxis=dict(
+                    #         showgrid=False,
+                    #         tickfont=dict(size=10),  # Smaller x-axis labels
+                    #         tickangle=-45,  # Rotate labels for better readability
+                    #         automargin=True,  # Auto-adjust margins
+                    #         title_text="អង្គភាពប្រើប្រាស់",
+                    #         title_font=dict(size=12)
+                    #     ),
+                    #     yaxis=dict(
+                    #         gridcolor="#f5f5f5",
+                    #         range=[0, y_max],  # Set y-axis range with padding
+                    #         title_text="ចំនួនអ្នកប្រើប្រាស់",
+                    #         title_font=dict(size=12)
+                    #     ),
+                    #     legend=dict(
+                    #         orientation="h",
+                    #         yanchor="bottom",
+                    #         y=1.02,
+                    #         xanchor="center",
+                    #         x=0.5,
+                    #         font=dict(size=11)
+                    #     ),
+                    #     bargap=0.3,  # More gap between groups
+                    #     bargroupgap=0.05  # Less gap within groups
+                    # )
+
+                    # st.plotly_chart(fig, use_container_width=True)
+
+
+            #         st.markdown("#### Status Over Time")
                     
-                    if 'Status' in df.columns and 'Z_CREATEDTTM' in df.columns:
-                        try:
-                            df['CREATED_DATE'] = pd.to_datetime(df['Z_CREATEDTTM'], format='%d-%b-%y %I.%M.%S.%f %p', errors='coerce')
-                            df['YearMonth'] = df['CREATED_DATE'].dt.to_period('M').astype(str)
+            #         if 'Status' in df.columns and 'Z_CREATEDTTM' in df.columns:
+            #             try:
+            #                 df['CREATED_DATE'] = pd.to_datetime(df['Z_CREATEDTTM'], format='%d-%b-%y %I.%M.%S.%f %p', errors='coerce')
+            #                 df['YearMonth'] = df['CREATED_DATE'].dt.to_period('M').astype(str)
                             
-                            # Create a line chart showing status changes over time
-                            status_over_time = df.groupby(['YearMonth', 'Status']).size().unstack().fillna(0)
+            #                 # Create a line chart showing status changes over time
+            #                 status_over_time = df.groupby(['YearMonth', 'Status']).size().unstack().fillna(0)
                             
-                            fig = go.Figure()
+            #                 fig = go.Figure()
                             
-                            # Define a professional color palette
-                            status_colors = {
-                                'Active': '#3498db',
-                                'Inactive': '#e74c3c',
-                                'Pending': '#2ecc71'
-                            }
+            #                 # Define a professional color palette
+            #                 status_colors = {
+            #                     'Active': '#3498db',
+            #                     'Inactive': '#e74c3c',
+            #                     'Pending': '#2ecc71'
+            #                 }
                             
-                            for status in status_counts['Status']:
-                                fig.add_trace(go.Scatter(
-                                    x=status_over_time.index,
-                                    y=status_over_time[status],
-                                    name=status,
-                                    mode='lines+markers',
-                                    line=dict(width=2.5, color=status_colors.get(status, '#95a5a6')),
-                                    marker=dict(size=8),
-                                    hovertemplate=f"<b>{status}</b><br>%{{x}}<br>%{{y}} users<extra></extra>"
-                                ))
+            #                 for status in status_counts['Status']:
+            #                     fig.add_trace(go.Scatter(
+            #                         x=status_over_time.index,
+            #                         y=status_over_time[status],
+            #                         name=status,
+            #                         mode='lines+markers',
+            #                         line=dict(width=2.5, color=status_colors.get(status, '#95a5a6')),
+            #                         marker=dict(size=8),
+            #                         hovertemplate=f"<b>{status}</b><br>%{{x}}<br>%{{y}} users<extra></extra>"
+            #                     ))
                             
-                            fig.update_layout(
-                                height=400,
-                                margin=dict(l=0, r=0, t=0, b=0),
-                                xaxis_title=None,
-                                yaxis_title="User Count",
-                                legend=dict(
-                                    orientation="h",
-                                    yanchor="bottom",
-                                    y=-0.3,
-                                    xanchor="center",
-                                    x=0.5,
-                                    font=dict(family="Inter", size=12)
-                                ),
-                                plot_bgcolor='rgba(0,0,0,0)',
-                                paper_bgcolor='rgba(0,0,0,0)',
-                                font=dict(family="Inter", size=12),
-                                hoverlabel=dict(
-                                    bgcolor="white",
-                                    font_size=12,
-                                    font_family="Inter"
-                                )
-                            )
+            #                 fig.update_layout(
+            #                     height=400,
+            #                     margin=dict(l=0, r=0, t=0, b=0),
+            #                     xaxis_title=None,
+            #                     yaxis_title="User Count",
+            #                     legend=dict(
+            #                         orientation="h",
+            #                         yanchor="bottom",
+            #                         y=-0.3,
+            #                         xanchor="center",
+            #                         x=0.5,
+            #                         font=dict(family="Inter", size=12)
+            #                     ),
+            #                     plot_bgcolor='rgba(0,0,0,0)',
+            #                     paper_bgcolor='rgba(0,0,0,0)',
+            #                     font=dict(family="Inter", size=12),
+            #                     hoverlabel=dict(
+            #                         bgcolor="white",
+            #                         font_size=12,
+            #                         font_family="Inter"
+            #                     )
+            #                 )
                             
-                            st.plotly_chart(fig, use_container_width=True)
-                        except:
-                            st.warning("Could not process creation dates for timeline analysis")
+            #                 st.plotly_chart(fig, use_container_width=True)
+            #             except:
+            #                 st.warning("Could not process creation dates for timeline analysis")
         
         with tab3:
             col1, col2, col3 = st.columns([1, 1, 1], gap="medium")
@@ -662,26 +1307,178 @@ def show():
                 )
                 
                 st.plotly_chart(fig, use_container_width=True)
-                
-                # Calculate growth metrics
-                if len(monthly_counts) > 1:
-                    latest_month = monthly_counts.iloc[-1]['New Users']
-                    prev_month = monthly_counts.iloc[-2]['New Users']
-                    mom_growth = ((latest_month - prev_month) / prev_month * 100) if prev_month > 0 else 0
-                    
-                    st.markdown(f"""
-                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #e0e0e0;">
-                        <p style="font-weight: 600; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; color: #2c3e50;">Growth Insights</p>
-                        <ul style="margin: 0; padding-left: 1.2rem; color: #7f8c8d; font-size: 0.9rem; font-family: 'Inter', sans-serif;">
-                            <li>Average Monthly New Users: <strong>{monthly_counts['New Users'].mean():.1f}</strong></li>
-                            <li>Peak Month: <strong>{monthly_counts.loc[monthly_counts['New Users'].idxmax(), 'YearMonth']}</strong> ({monthly_counts['New Users'].max()} users)</li>
-                        </ul>
-                    </div>
-                    """, unsafe_allow_html=True)
-                # <li>Month-over-Month Growth: <strong>{mom_growth:.1f}%</strong></li>
             except Exception as e:
-                st.error(f"Error processing timeline data: {str(e)}")
-        
+                st.error(f"Error processing timeline data: {str(e)}")  
+                # # Calculate growth metrics
+                # if len(monthly_counts) > 1:
+                #     latest_month = monthly_counts.iloc[-1]['New Users']
+                #     prev_month = monthly_counts.iloc[-2]['New Users']
+                #     mom_growth = ((latest_month - prev_month) / prev_month * 100) if prev_month > 0 else 0
+                    
+                #     st.markdown(f"""
+                #     <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem; border: 1px solid #e0e0e0;">
+                #         <p style="font-weight: 600; margin-bottom: 0.5rem; font-family: 'Inter', sans-serif; color: #2c3e50;">Growth Insights</p>
+                #         <ul style="margin: 0; padding-left: 1.2rem; color: #7f8c8d; font-size: 0.9rem; font-family: 'Inter', sans-serif;">
+                #             <li>Average Monthly New Users: <strong>{monthly_counts['New Users'].mean():.1f}</strong></li>
+                #             <li>Peak Month: <strong>{monthly_counts.loc[monthly_counts['New Users'].idxmax(), 'YearMonth']}</strong> ({monthly_counts['New Users'].max()} users)</li>
+                #         </ul>
+                #     </div>
+                #     """, unsafe_allow_html=True)
+                # # <li>Month-over-Month Growth: <strong>{mom_growth:.1f}%</strong></li>
+                
+
+
+            st.markdown('<div class="section-header">User Summary Table by Organization</div>', unsafe_allow_html=True)
+            # # Load data
+            # df_su = pd.read_excel("Excel files/User Alias Data(Dec) from prod.xlsx")
+            # int(df_summary["សកម្ម"].sum())
+
+            numeric_cols = ["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"]
+            df_su[numeric_cols] = df_su[numeric_cols].apply(
+                pd.to_numeric, errors="coerce"
+            ).fillna(0)
+
+            # Calculate total
+            df_su["សរុប"] = df_su["សកម្ម"] + df_su["ឈប់ប្រើប្រាស់"] + df_su["អសកម្ម"]
+
+          
+            # BUILD SUMMARY TABLE
+            df_summary = (
+                df_su.groupby("អង្គភាពប្រើប្រាស់", as_index=False)
+                .agg(
+                    ចំនួនការដ្ឋាន=("អង្គភាពប្រើប្រាស់", "count"),
+                    សកម្ម=("សកម្ម", "sum"),
+                    ឈប់ប្រើប្រាស់=("ឈប់ប្រើប្រាស់", "sum"),
+                    អសកម្ម=("អសកម្ម", "sum"),
+                    សរុប=("សរុប", "sum")
+                )
+            )
+     
+               
+            df_display = df_summary.copy()
+
+            # Replace 1 → N/A ONLY for display
+            df_display["ចំនួនការដ្ឋាន"] = df_display["ចំនួនការដ្ឋាន"].apply(
+                lambda x: "N/A" if x == 1 else x
+)
+
+                # Rename columns to Khmer
+            df_summary = df_summary.rename(columns={
+                "ENTITY": "ចំនួនការដ្ឋាន" 
+            })
+            # Add Khmer numbering for rows
+            khmer_numbers = [
+                "១","២","៣","៤","៥","៦","៧","៨","៩","១០",
+                "១១","១២","១៣","១៤","១៥"
+            ]
+
+            df_display.insert(0, "ល.រ", khmer_numbers[:len(df_display)])
+
+            # Add totals row
+            totals_row = {
+                    "ល.រ": "សរុប",
+                    "អង្គភាពប្រើប្រាស់": "",
+                    "ចំនួនការដ្ឋាន": int(df_summary["ចំនួនការដ្ឋាន"].sum()),
+                    "សកម្ម": int(df_summary["សកម្ម"].sum()),
+                    "ឈប់ប្រើប្រាស់": int(df_summary["ឈប់ប្រើប្រាស់"].sum()),
+                    "អសកម្ម": int(df_summary["អសកម្ម"].sum()),
+                    "សរុប": int(df_summary["សរុប"].sum()),
+                }
+
+            df_summary_with_totals = pd.concat(
+                [df_display, pd.DataFrame([totals_row])],
+                ignore_index=True
+            )
+
+
+            # TABS
+            tab1, tab2 = st.tabs([ "Graph","Table"])
+
+            with tab2:
+                st.dataframe(
+                    df_summary_with_totals,
+                    use_container_width=True,
+                    height=500,
+                    hide_index=True,
+                    column_config={
+                        "ល.រ": st.column_config.TextColumn("ល.រ"),
+                        "អង្គភាពប្រើប្រាស់": st.column_config.TextColumn("អង្គភាពប្រើប្រាស់"),
+                        "ចំនួនការដ្ឋាន": st.column_config.NumberColumn("ចំនួនការដ្ឋាន"),
+                        "សកម្ម": st.column_config.NumberColumn("សកម្ម"),
+                        "ឈប់ប្រើប្រាស់": st.column_config.NumberColumn("ឈប់ប្រើប្រាស់"),
+                        "អសកម្ម": st.column_config.NumberColumn("អសកម្ម"),
+                        "សរុប": st.column_config.NumberColumn("សរុប"),
+                    }
+                )
+
+            # GRAPH TAB
+
+            with tab1:
+                colors = ["#3498db", "#2ecc71", "#e74c3c"]
+    
+                fig = px.bar(
+                    df_summary,
+                    x="អង្គភាពប្រើប្រាស់",
+                    y=["សកម្ម", "ឈប់ប្រើប្រាស់", "អសកម្ម"],
+                    barmode="group",
+                    labels={
+                        "value": "ចំនួនអ្នកប្រើប្រាស់",
+                        "variable": "ស្ថានភាព",
+                        "អង្គភាពប្រើប្រាស់": "អង្គភាពប្រើប្រាស់"
+                    },
+                    color_discrete_sequence=colors
+                )
+                
+                # Add different text styling for each trace
+                for i, trace in enumerate(fig.data):
+                    # Choose text position based on bar series
+                    if i == 0:  # First series (សកម្ម) - usually largest, put inside
+                        fig.data[i].textposition = 'inside'
+                        fig.data[i].textfont = dict(color='white', size=11)
+                    else:  # Other series - put outside if values are small
+                        fig.data[i].textposition = 'outside'
+                        fig.data[i].textfont = dict(size=10)
+                    
+                    fig.data[i].texttemplate = '%{y}'
+                    fig.data[i].marker.line.width = 0.5
+                    fig.data[i].marker.line.color = "white"
+                    fig.data[i].width = 0.25
+                
+                fig.update_layout(
+                    height=500,
+                    margin=dict(l=0, r=0, t=20, b=20),
+                    plot_bgcolor="white",
+                    paper_bgcolor="white",
+                    font=dict(size=12),
+                    xaxis=dict(
+                        title_font=dict(size=14),
+                        tickfont=dict(size=12),
+                        showgrid=False,
+                        linecolor="lightgray"
+                    ),
+                    yaxis=dict(
+                        title_font=dict(size=14),
+                        tickfont=dict(size=12),
+                        gridcolor="whitesmoke",
+                        linecolor="lightgray"
+                    ),
+                    legend=dict(
+                        title="ស្ថានភាព",
+                        title_font=dict(size=12),
+                        font=dict(size=11),
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
+                    ),
+                    bargap=0.15,
+                    bargroupgap=0.1
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+    
+
         # ======================
         # USER DETAILS TABLE
         # ======================
@@ -759,9 +1556,218 @@ def show():
     except Exception as e:
         st.error(f"An unexpected error occurred: {str(e)}")
 
+
+
 if __name__ == "__main__":
     show()
 
 
 
 
+
+
+
+# import streamlit as st
+# import pandas as pd
+# import plotly.express as px
+# import plotly.graph_objects as go
+# from datetime import datetime
+# import numpy as np
+
+# def show():
+#     """Professional User Analytics Dashboard"""
+#     # Remove default padding
+#     st.markdown("""
+#         <style>
+#             .block-container {
+#                 padding-top: 1rem;
+#                 padding-bottom: 3rem;
+#             }
+#         </style>
+#     """, unsafe_allow_html=True)
+    
+#     # Dashboard header
+#     st.title("👥 ផ្ទាំងព័ត៌មានអ្នកប្រើប្រាស់")
+#     st.markdown("ការវិភាគទិន្នន័យអ្នកប្រើប្រាស់និងស្ថានភាពគណនី")
+    
+#     # ======================
+#     # SUMMARY TABLE - USING STREAMLIT COMPONENTS
+#     # ======================
+#     st.markdown("---")
+#     st.subheader("តារាងសង្ខេបអ្នកប្រើប្រាស់តាមអង្គភាព")
+    
+#     # Summary data
+#     summary_data = [
+#         ["១", "ច្បាប់សាធារណៈ", "N/A", 45, 3, 1, 49],
+#         ["២", "អគ្គនាយកដ្ឋាន (៥)", 9, 59, 2, 26, 87],
+#         ["៣", "ក្រសួង (៣៨)", 38, 521, 147, 270, 938],
+#         ["៤", "អង្គភាពជាតិការងារបច្ចេកវិទ្យាព័ត៌មាន (១១៨)", 118, 621, 90, 196, 907],
+#         ["៥", "អង្គភាពជាតិការងារបច្ចេកវិទ្យាព័ត៌មាន (១៨)", 18, 42, 1, 1, 44],
+#         ["៦", "បច្ចេកវិទ្យា អាយធី-២៥ (២៥)", 25, 235, 46, 77, 358],
+#         ["៧", "ស្ថាប័នអាយធី-២៥ (២៥)", 25, 297, 79, 19, 395],
+#         ["៨", "ស្ថាប័នអាយធី-២៥ (២៥)", 25, 157, 28, 104, 289],
+#         ["៩", "ក្រុមស្ថាបនាសេវា (៩)", 9, 59, 2, 26, 87],
+#         ["១០", "ក្រុម គណៈ ឧបត្ថម្ភ (៩៥)", 95, 429, 14, 78, 521],
+#         ["១១", "បច្ចេកវិទ្យា បណ្ដាញ និងទីផ្សារ អាយធី-២៥ (២៥)", 25, 161, 0, 0, 162],
+#     ]
+
+#     summary_columns = [
+#         "ល.រ", "អង្គភាពប្រើប្រាស់", "ចំនួនកាតព្វកិច្ច",
+#         "សរុប", "ប្រើប្រាស់", "មិនប្រើ", "សរុបចុងក្រោយ"
+#     ]
+
+#     df_summary = pd.DataFrame(summary_data, columns=summary_columns)
+    
+#     # Create a styled dataframe
+#     styled_df = df_summary.copy()
+    
+#     # Calculate totals
+#     styled_df['ចំនួនកាតព្វកិច្ច_numeric'] = pd.to_numeric(
+#         df_summary['ចំនួនកាតព្វកិច្ច'], 
+#         errors='coerce'
+#     ).fillna(0).astype(int)
+    
+#     # Add totals row
+#     totals_row = {
+#         "ល.រ": "សរុប",
+#         "អង្គភាពប្រើប្រាស់": "",
+#         "ចំនួនកាតព្វកិច្ច": styled_df['ចំនួនកាតព្វកិច្ច_numeric'].sum(),
+#         "សរុប": styled_df['សរុប'].sum(),
+#         "ប្រើប្រាស់": styled_df['ប្រើប្រាស់'].sum(),
+#         "មិនប្រើ": styled_df['មិនប្រើ'].sum(),
+#         "សរុបចុងក្រោយ": styled_df['សរុបចុងក្រោយ'].sum(),
+#     }
+    
+#     # Display as a nice table with custom styling
+#     col1, col2, col3 = st.columns([1, 3, 1])
+    
+#     with col2:
+#         st.dataframe(
+#             df_summary,
+#             use_container_width=True,
+#             hide_index=True,
+#             height=500,
+#             column_config={
+#                 "ល.រ": st.column_config.TextColumn(width="small"),
+#                 "អង្គភាពប្រើប្រាស់": st.column_config.TextColumn(width="large"),
+#                 "ចំនួនកាតព្វកិច្ច": st.column_config.TextColumn(width="medium"),
+#                 "សរុប": st.column_config.NumberColumn(width="small"),
+#                 "ប្រើប្រាស់": st.column_config.NumberColumn(width="small"),
+#                 "មិនប្រើ": st.column_config.NumberColumn(width="small"),
+#                 "សរុបចុងក្រោយ": st.column_config.NumberColumn(width="small"),
+#             }
+#         )
+    
+#     # Display totals in metrics
+#     st.markdown("#### សង្ខេបសរុប")
+#     total_duties = styled_df['ចំនួនកាតព្វកិច្ច_numeric'].sum()
+#     total_final = styled_df['សរុបចុងក្រោយ'].sum()
+#     total_active = styled_df['ប្រើប្រាស់'].sum()
+#     total_inactive = styled_df['មិនប្រើ'].sum()
+    
+#     col1, col2, col3, col4 = st.columns(4)
+#     with col1:
+#         st.metric(label="សរុបអ្នកប្រើប្រាស់", value=f"{total_final:,}")
+#     with col2:
+#         usage_rate = (total_active / total_final * 100) if total_final > 0 else 0
+#         st.metric(label="អត្រាប្រើប្រាស់", value=f"{usage_rate:.1f}%")
+#     with col3:
+#         st.metric(label="គណនីមិនប្រើប្រាស់", value=f"{total_inactive:,}")
+#     with col4:
+#         avg_per_duty = total_final / total_duties if total_duties > 0 else 0
+#         st.metric(label="អ្នកប្រើជាមធ្យមក្នុងកាតព្វកិច្ច", value=f"{avg_per_duty:.1f}")
+    
+#     # ======================
+#     # LOAD EXCEL DATA
+#     # ======================
+#     st.markdown("---")
+#     st.subheader("ទិន្នន័យលម្អិតពីឯកសារ Excel")
+    
+#     try:
+#         df = pd.read_excel("Excel files/User Management.xlsx")
+        
+#         # Data preprocessing
+#         df['Organization_Name'] = df[['PV_Description','PT_Description','DEF_Description','EPA_Description', 
+#                                     'GD_Description','BE_Description', 'GS_Description', 'ABE_Description',
+#                                     'DS_Description']].bfill(axis=1).iloc[:, 0]
+        
+#         # Calculate department counts
+#         department_data = {
+#             'Department': ['LM-GS', 'LM-ABE', 'GD', 'PT', 'DEF', 'PV', 'DS', 'EPA', 'LM-BE','TOP'],
+#             'Users': [38, 106, 9, 25, 25, 25, 44, 9, 19, 1]
+#         }
+#         df_dept = pd.DataFrame(department_data)
+        
+#         # Display metrics from Excel
+#         col1, col2, col3 = st.columns(3)
+#         with col1:
+#             total_users = len(df)
+#             st.metric(label="អ្នកប្រើប្រាស់សរុប (Excel)", value=f"{total_users:,}")
+#         with col2:
+#             active_users = len(df[df['Status'] == 'Active']) if 'Status' in df.columns else 0
+#             st.metric(label="អ្នកប្រើប្រាស់សកម្ម", value=f"{active_users:,}")
+#         with col3:
+#             departments = len(df_dept)
+#             st.metric(label="ចំនួនអង្គភាព", value=f"{departments}")
+        
+#         # User distribution visualization
+#         st.markdown("#### ការចែកចាយអ្នកប្រើប្រាស់")
+        
+#         tab1, tab2, tab3 = st.tabs(["អង្គភាព", "ស្ថានភាព", "ទិន្នន័យប្រជាសាស្រ្ត"])
+        
+#         with tab1:
+#             # Department treemap
+#             fig = px.treemap(
+#                 df_dept,
+#                 path=['Department'],
+#                 values='Users',
+#                 color='Users',
+#                 color_continuous_scale='Blues',
+#                 title="ការចែកចាយតាមអង្គភាព"
+#             )
+#             st.plotly_chart(fig, use_container_width=True)
+        
+#         with tab2:
+#             if 'Status' in df.columns:
+#                 status_counts = df['Status'].value_counts().reset_index()
+#                 status_counts.columns = ['Status', 'Count']
+                
+#                 fig = px.pie(
+#                     status_counts,
+#                     values='Count',
+#                     names='Status',
+#                     title="ស្ថានភាពអ្នកប្រើប្រាស់",
+#                     color_discrete_sequence=['#3498db', '#e74c3c', '#2ecc71']
+#                 )
+#                 st.plotly_chart(fig, use_container_width=True)
+        
+#         with tab3:
+#             # Display basic user info table
+#             if 'NAME_KH' in df.columns and 'USERIDALIAS' in df.columns:
+#                 st.dataframe(
+#                     df[['NAME_KH', 'USERIDALIAS', 'Status', 'Organization_Name']].head(20),
+#                     use_container_width=True,
+#                     column_config={
+#                         "NAME_KH": "ឈ្មោះ",
+#                         "USERIDALIAS": "ឈ្មោះអ្នកប្រើ",
+#                         "Status": "ស្ថានភាព",
+#                         "Organization_Name": "អង្គភាព"
+#                     }
+#                 )
+        
+#         # Export option
+#         st.download_button(
+#             label="📥 ទាញយកទិន្នន័យ",
+#             data=df.to_csv(index=False).encode('utf-8'),
+#             file_name="user_data.csv",
+#             mime="text/csv"
+#         )
+        
+#     except FileNotFoundError:
+#         st.error("❌ ឯកសារ Excel មិនត្រូវបានរកឃើញ។ សូមពិនិត្យថា 'User Management.xlsx' មាននៅក្នុងថត 'Excel files/'")
+#         st.info("ទិន្នន័យសង្ខេបខាងលើនៅតែបង្ហាញដដែល។")
+#     except Exception as e:
+#         st.error(f"❌ កំហុស: {str(e)}")
+
+# if __name__ == "__main__":
+#     show()

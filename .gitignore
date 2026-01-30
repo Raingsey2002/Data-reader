@@ -1,7 +1,14 @@
-<<<<<<< HEAD
+
+# Python
 __pycache__/
 *.pyc
-=======
-.env
-__pycache__
->>>>>>> feature-report-dashboard
+
+# macOS
+.DS_Store
+
+# Streamlit
+.streamlit/
+
+# Virtual env
+.venv/
+

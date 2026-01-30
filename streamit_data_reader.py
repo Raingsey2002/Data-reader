@@ -67,11 +67,12 @@ def data_reader_page():
         unsafe_allow_html=True,
     )
 
-     # File path for your Excel file
-    file_path = "Excel files/OU_df_merged.xlsx"
+     # File path for your Parquet file
+    file_path = "Excel files/OU_df_merged.parquet"
 
-    # Read the Excel file into a dataframe
-    df = pd.read_excel(file_path, dtype=str).fillna("")
+    # Read the Parquet file into a dataframe
+    df = pd.read_parquet(file_path).astype(str).fillna("")
+    # df = pd.read_parquet(file_path)
     df = df[['OPERATING_UNIT', 'Len', 'EFFDT', 'EFFDT_Year', 'EFF_STATUS', 'DESCRLONG_KHM', 'នៅក្រោមក្រសួង', 'រដ្ឋបាលខេត្ត','DESCRSHORT_ENG']]
 
 

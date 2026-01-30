@@ -207,7 +207,8 @@ def show():
     
     # Load data with error handling
     try:
-        df = pd.read_excel("Excel files/User Management.xlsx")
+        # df = pd.read_excel("Excel files/User Management.xlsx")
+        df = pd.read_parquet('Excel files/User Management.parquet').astype(str).fillna("")
         
         # Data preprocessing
         df['Organization_Name'] = df[['PV_Description','PT_Description','DEF_Description','EPA_Description', 

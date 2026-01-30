@@ -743,10 +743,10 @@ import plotly.graph_objects as go
 @st.cache_data(show_spinner=False)
 def load_supplier_data():
     """Load and normalize supplier data from Excel."""
-    file_path = "Excel files/Supplier.xlsx"
+    file_path = "Excel files/Supplier.parquet"
 
     try:
-        df = pd.read_excel(file_path, dtype=str)
+        df = pd.read_parquet(file_path).astype(str).fillna("")
     except FileNotFoundError:
         return pd.DataFrame()
 

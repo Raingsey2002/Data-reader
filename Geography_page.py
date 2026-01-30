@@ -278,9 +278,9 @@ def Geography():
 
     # Load data with caching
     def load_data():
-        file_path = "Excel files/Geographyfordatareader.xlsx"
-        df = pd.read_excel(file_path, dtype=str).fillna("")
-        df['EFFDT'] = pd.to_datetime(df['EFFDT'], errors='coerce')
+        file_path = "Excel files/Geographyfordatareader.parquet"
+        df = pd.read_parquet(file_path).astype(str).fillna("")
+        # df['EFFDT'] = pd.to_datetime(df['EFFDT'], errors='coerce')
         df['Effective_date'] = df['EFFDT_Year'].astype(str) + '-2025'
         df['EFF_STATUS'] = df['EFF_STATUS'].map({'A': 'Active', 'I': 'Inactive'})
         df[['Start_Year', 'End_Year']] = df['Effective_date'].str.split('-', expand=True)
@@ -445,12 +445,14 @@ def Geography():
         col1, col2, col3, col4 = st.columns(4)
 
         # Calculate values
-        total_records = len(current_data)
-        provinces = current_data['Province_English'].nunique()
-        districts = len(current_data[current_data['group'] == 'District'])
-        schools = len(current_data[current_data['group'] == 'School'])
-        communes = len(current_data[current_data['group'] == 'Communes'])
-
+        
+        provinces = len(current_data['Province_Khmer'].unique())
+        #provinces = len(current_data[current_data['group'] == 'Province'])
+        districts = current_data[current_data['Len'] == "4"]['DESCRLONG_KHM'].nunique()
+        schools = current_data[current_data['Len'] == "7"]['DESCRLONG_KHM'].nunique()
+        communes = current_data[current_data['Len'] == "6"]['DESCRLONG_KHM'].nunique()
+        departments = current_data[current_data['Len'] == "5"]['DESCRLONG_KHM'].nunique()
+        total_records = provinces + districts + schools + communes + departments
         # Render metrics
         with col1:
             st.markdown("""
@@ -462,13 +464,29 @@ def Geography():
             """.format(total_records), unsafe_allow_html=True)
 
         with col2:
-            st.markdown("""
-            <div style="text-align: center; padding: 1.5rem 1rem; background: white; border-radius: 10px; 
+            # st.markdown("""
+            # <div style="text-align: center; padding: 1.5rem 1rem; background: white; border-radius: 10px; 
+            #             border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+            #     <h3 style="margin: 0;font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; color: #6b7280;">Provinces</h3>
+            #     <p style="margin: 0.5rem 0 0 0; font-size: 2rem; font-weight: 700; color: #111827;">{:,}</p>
+            # </div>
+            # """.format(provinces), unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="text-align: center; padding: 1.4rem 1rem; background: white; border-radius: 10px; 
                         border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                <h3 style="margin: 0;font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; color: #6b7280;">Provinces</h3>
-                <p style="margin: 0.5rem 0 0 0; font-size: 2rem; font-weight: 700; color: #111827;">{:,}</p>
+                <h3 style="margin: 0;font-family: 'Inter', sans-serif; font-size: 0.9rem; font-weight: 600; color: #6b7280;">Prov. & Health Dept.</h3>
+                <div style="display: flex; justify-content: space-around; margin-top: 0.5rem;">
+                    <div>
+                        <p style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #111827;">{provinces:,}</p>
+                        <p style="margin: 0; font-size: 0.7rem; color: #9ca3af;">Provinces</p>
+                    </div>
+                    <div>
+                        <p style="margin: 0; font-size: 1.5rem; font-weight: 700; color: #111827;">{departments:,}</p>
+                        <p style="margin: 0; font-size: 0.7rem; color: #9ca3af;">Health Dept.</p>
+                    </div>
+                </div>
             </div>
-            """.format(provinces), unsafe_allow_html=True)
+            """, unsafe_allow_html=True)
 
         with col3:
             st.markdown(f"""
@@ -509,21 +527,35 @@ def Geography():
         st.markdown('<div class="subsection-header">Data Distribution</div>', unsafe_allow_html=True)
         col1, col2 = st.columns([2, 1])
         
+
+
         with col1:
-            # Enhanced pie chart with more details
-            group_data = current_data['group'].value_counts().reset_index()
-            group_data.columns = ['Category', 'Count']
-            group_data = group_data[group_data['Category'] != 3]
-            
+            # Calculate values
+            provinces = current_data['Province_Khmer'].nunique()
+            districts = current_data[current_data['Len'] == "4"]['DESCRLONG_KHM'].nunique()
+            schools = current_data[current_data['Len'] == "7"]['DESCRLONG_KHM'].nunique()
+            communes = current_data[current_data['Len'] == "6"]['DESCRLONG_KHM'].nunique()
+            departments = current_data[current_data['Len'] == "5"]['DESCRLONG_KHM'].nunique()
+
+            # Create dataframe for pie chart
+            group_data = pd.DataFrame({
+                'Category': ['Provinces', 'Districts', 'Schools', 'Communes', 'Departments'],
+                'Count': [provinces, districts, schools, communes, departments]
+            })
+
+            # Remove zero values (optional but recommended)
+            group_data = group_data[group_data['Count'] > 0]
+
+            # Create pie chart
             fig_pie = px.pie(
-                group_data, 
-                values='Count', 
+                group_data,
+                values='Count',
                 names='Category',
                 hole=0.5,
                 color_discrete_sequence=px.colors.sequential.Blues_r,
                 template='plotly_white'
             )
-            
+
             fig_pie.update_layout(
                 height=400,
                 showlegend=True,
@@ -537,15 +569,53 @@ def Geography():
                     font=dict(size=16, color='#2c3e50')
                 )
             )
-            
+
             fig_pie.update_traces(
                 textposition='inside',
                 textinfo='percent+label',
                 marker=dict(line=dict(color='white', width=2)),
                 hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}'
             )
-            
+
             st.plotly_chart(fig_pie, use_container_width=True)
+
+        # with col1:
+        #     # Enhanced pie chart with more details
+        #     group_data = current_data['group'].value_counts().reset_index()
+        #     group_data.columns = ['Category', 'Count']
+        #     group_data = group_data[group_data['Category'] != 3]
+            
+        #     fig_pie = px.pie(
+        #         group_data, 
+        #         values='Count', 
+        #         names='Category',
+        #         hole=0.5,
+        #         color_discrete_sequence=px.colors.sequential.Blues_r,
+        #         template='plotly_white'
+        #     )
+            
+        #     fig_pie.update_layout(
+        #         height=400,
+        #         showlegend=True,
+        #         plot_bgcolor='rgba(0,0,0,0)',
+        #         paper_bgcolor='rgba(0,0,0,0)',
+        #         font=dict(size=12, family='Arial'),
+        #         margin=dict(t=40, b=20, l=20, r=20),
+        #         title=dict(
+        #             text='Data Distribution by Category',
+        #             x=0.5,
+        #             font=dict(size=16, color='#2c3e50')
+        #         )
+        #     )
+            
+        #     fig_pie.update_traces(
+        #         textposition='inside',
+        #         textinfo='percent+label',
+        #         marker=dict(line=dict(color='white', width=2)),
+        #         hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}'
+        #     )
+            
+        #     st.plotly_chart(fig_pie, use_container_width=True)
 
         with col2:
             # Province-wise distribution (Top 10)

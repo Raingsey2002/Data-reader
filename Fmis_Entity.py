@@ -128,7 +128,9 @@ def FmisEntity():
 
     # Load the Excel file
     try:
-        df = pd.read_excel('Excel files/FMIS Entity all CMB01.xlsx')
+        #df = pd.read_excel('Excel files/FMIS Entity all CMB01.xlsx')
+        file_path = "Excel files/FMIS Entity all CMB01.parquet"
+        df = pd.read_parquet(file_path).astype(str).fillna("")
     except FileNotFoundError:
         st.error("Error: The FMIS Entity data file could not be found.")
         return
@@ -300,7 +302,6 @@ def FmisEntity():
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
     # Elegant tabs with consistent styling
     tab1, tab2, tab3 = st.tabs(["Hierarchy", "Data Table", "Analytics"])
     
@@ -313,7 +314,7 @@ def FmisEntity():
             # Elegant expander card
             with st.expander(f"**{bu_code} - {bu_desc}**", expanded=False):
                 # Get operating units for this business unit
-                ou_df = filtered_df[filtered_df['BUSINESS_UNIT'] == bu_code][['OPERATING_UNIT', 'DESCRLONG_ENG']].drop_duplicates()
+                ou_df = filtered_df[filtered_df['BUSINESS_UNIT'] == bu_code][['OPERATING_UNIT', 'DESCRLONG_KHM']].drop_duplicates()
                 
                 if not ou_df.empty:
                     st.markdown(
@@ -341,7 +342,7 @@ def FmisEntity():
                                         </div>
                                     </div>
                                     <div style="color: {LIGHT_TEXT}; font-size: 14px; margin-top: 4px; padding-left: 26px;">
-                                        {ou_row['DESCRLONG_ENG'] if pd.notna(ou_row['DESCRLONG_ENG']) else 'No description available'}
+                                        {ou_row['DESCRLONG_KHM'] if pd.notna(ou_row['DESCRLONG_KHM']) else 'No description available'}
                                     </div>
                                 </div>
                                 """,
@@ -408,7 +409,7 @@ def FmisEntity():
         )
         
         if selected_bu:
-            ou_details = filtered_df[filtered_df['BUSINESS_UNIT'] == selected_bu][['OPERATING_UNIT', 'DESCRLONG_ENG']].drop_duplicates()
+            ou_details = filtered_df[filtered_df['BUSINESS_UNIT'] == selected_bu][['OPERATING_UNIT', 'DESCRLONG_KHM']].drop_duplicates()
             
             # Elegant heading with count
             st.markdown(f"""
@@ -439,7 +440,7 @@ def FmisEntity():
                                 </div>
                             </div>
                             <div style="color: {LIGHT_TEXT}; font-size: 14px; margin-top: 4px; padding-left: 26px;">
-                                {row['DESCRLONG_ENG'] if pd.notna(row['DESCRLONG_ENG']) else 'No description available'}
+                                {row['DESCRLONG_KHM'] if pd.notna(row['DESCRLONG_KHM']) else 'No description available'}
                             </div>
                         </div>
                         """,
@@ -655,7 +656,7 @@ def FmisEntity():
         )
         
         # Prepare data for download
-        export_df = filtered_df[['BUSINESS_UNIT', 'BU_Description', 'OPERATING_UNIT', 'DESCRLONG_ENG']].drop_duplicates()
+        export_df = filtered_df[['BUSINESS_UNIT', 'BU_Description', 'OPERATING_UNIT', 'DESCRLONG_KHM']].drop_duplicates()
         
         col1, col2 = st.columns(2)
         with col1:

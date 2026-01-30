@@ -21,8 +21,9 @@ def Economic():
         unsafe_allow_html=True,
     )
 
-    file_path = "Excel files/Economic_df_merged.xlsx"
-    df = pd.read_excel(file_path, dtype=str).fillna("")
+    file_path = "Excel files/Economic_df_merged.parquet"
+    # df = pd.read_excel(file_path, dtype=str).fillna("")
+    df = pd.read_parquet(file_path).astype(str).fillna("")
 
     # Create three columns for layout
     col1, col2, col3, col4 = st.columns([20, 5, 5, 5])

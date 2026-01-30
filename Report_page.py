@@ -1036,8 +1036,11 @@ def Report():
                 dff['entity'].str.upper().str.contains(s) |
                 dff['desc'].str.upper().str.contains(s)
             ]
-        st.write(f"Showing {len(dff)} records")
-        st.dataframe(dff, use_container_width=True, height=600)
+        # st.write(f"Showing {len(dff)} records")
+        # st.dataframe(dff, use_container_width=True, height=600)
+        st.write(f"Showing {min(len(dff), 300)} records")
+        st.dataframe(dff.head(300), use_container_width=True, height=600)
+
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 

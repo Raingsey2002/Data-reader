@@ -534,11 +534,21 @@ def Report():
         # 2. Entities
         entity_desc_map = {}
         if masters:
-            all_entities = sorted([e['code'] for e in masters['entities']])
+            # Build map first
             for e in masters['entities']:
                 entity_desc_map[e['code']] = e['desc']
+            
+            # Filter entities based on selected levels
+            if sel_levels:
+                all_entities = [e['code'] for e in masters['entities'] if e.get('level') in sel_levels]
+            else:
+                all_entities = [e['code'] for e in masters['entities']]
         else:
-            all_entities = sorted(df_raw['norm_entity'].unique())
+            # Fallback to dataframe if masters not loaded
+            if sel_levels:
+                all_entities = sorted(df_raw[df_raw['level'].isin(sel_levels)]['norm_entity'].unique())
+            else:
+                all_entities = sorted(df_raw['norm_entity'].unique())
             
         def format_entity(code):
             desc = entity_desc_map.get(code, "")

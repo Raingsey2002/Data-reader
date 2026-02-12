@@ -129,7 +129,7 @@ def FmisEntity():
     # Load the Excel file
     try:
         #df = pd.read_excel('Excel files/FMIS Entity all CMB01.xlsx')
-        file_path = "Excel files/FMIS Entity all CMB01.parquet"
+        file_path = "Excel files/FMIS Entity all CMB01 (1).parquet"
         df = pd.read_parquet(file_path).astype(str).fillna("")
     except FileNotFoundError:
         st.error("Error: The FMIS Entity data file could not be found.")
@@ -654,7 +654,9 @@ def FmisEntity():
             f"<h3 style='color:{TEXT_COLOR}; margin-bottom: 16px; font-size: 1.25rem;'>Data Export</h3>", 
             unsafe_allow_html=True
         )
-        
+        #Add a single quote ' before the value in the 'OPERATING_UNIT' column to prevent Excel from converting it to a number or date
+        filtered_df['OPERATING_UNIT'] = filtered_df['OPERATING_UNIT'].apply(lambda x: "'" + str(x))
+
         # Prepare data for download
         export_df = filtered_df[['BUSINESS_UNIT', 'BU_Description', 'OPERATING_UNIT', 'DESCRLONG_KHM']].drop_duplicates()
         

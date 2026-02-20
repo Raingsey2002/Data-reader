@@ -61,7 +61,7 @@ def data_reader_page():
     st.markdown(
         """
         <h1 style="text-align: center; color: #1f2937; font-size: 40px; font-weight: bold; padding: 10px font-family: 'Noto Sans Khmer', Arial, sans-serif;">
-            អង្គភាពប្រតិបត្តិ
+            អង្គភាពប្រតិបត្តិ និងរដ្ឋបាល
         </h1>
         """,
         unsafe_allow_html=True,
@@ -289,10 +289,14 @@ st.markdown(
 
 pages = {
     "មាតិកាគណនីនៃប្លង់គណនេយ្យ": [
-        st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ"),
+        st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ និងរដ្ឋបាល"),
         st.Page(Economic, title="📊  មាតិកាគណនី"),
         st.Page(Program, title="📋  កម្មវិធី"),
         st.Page(Geography, title="🌍  ភូមិសាស្រ្ត"),
+        st.Page(Project, title="📂  គម្រោង"),
+        st.Page(Functionpage, title="⚙️  មុខងារ"),
+        st.Page(Fund, title="💰  មូលនិធិ"),
+        
     ],
     "ទិន្នន័យមេ": [
          st.Page(FmisEntity, title="🏛️  អង្គភាពការងារ"),

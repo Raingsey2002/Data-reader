@@ -2,6 +2,17 @@ import streamlit as st
 import pandas as pd 
 
 def Project():
+
+     # 🔹 Remove Streamlit default top padding
+    st.markdown("""
+        <style>
+            .block-container {
+                padding-top: 1rem;
+                padding-bottom: 3rem;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.markdown(
         """
         <h1 style="text-align: center; color: #1f2937; font-size: 40px; font-weight: bold; padding: 10px;">
@@ -50,10 +61,19 @@ def Project():
     filtered_df = df[df['EFF_STATUS'] == selected_status]
 
     # Filter by search text
+    # if text_search:
+    #     mask1 = filtered_df["DESCRLONG"].str.contains(text_search, case=False, na=False)
+    #     mask2 = filtered_df["PROJECT_ID"].str.contains(text_search, case=False, na=False)
+    #     filtered_df = filtered_df[mask1 | mask2]
     if text_search:
-        mask1 = filtered_df["DESCRLONG"].str.contains(text_search, case=False, na=False)
-        mask2 = filtered_df["PROJECT_ID"].str.contains(text_search, case=False, na=False)
-        filtered_df = filtered_df[mask1 | mask2]
+        pattern = f"^{text_search}"
+
+        if filtered_df["PROJECT_ID"].str.match(pattern, case=False, na=False).any():
+            filtered_df = filtered_df[filtered_df["PROJECT_ID"].str.match(pattern, case=False, na=False)]
+        elif filtered_df["DESCRLONG"].str.contains(text_search, case=False, na=False).any():
+            filtered_df = filtered_df[filtered_df["DESCRLONG"].str.contains(text_search, case=False, na=False)]
+        else:
+            filtered_df = pd.DataFrame()  # No matches found, return empty DataFrame
 
     # Display filtered results
     st.subheader("Filtered Results")

@@ -45,6 +45,36 @@ def derive_type(code, name=None):
 
     return 'Report'
 
+
+def _sanitize_for_arrow(df_in):
+        """Return a copy of the dataframe with columns converted to Arrow-friendly types.
+
+        Strategy:
+        - Work on a copy to avoid SettingWithCopyWarning.
+        - For object dtype columns, try `pd.to_numeric(errors='coerce')` and if a
+            majority of values convert to numeric, keep the numeric dtype.
+        - Replace literal 'N/A' strings with <NA> so integer-like columns become
+            nullable rather than mixed type strings.
+        - If conversion still fails, coerce object columns to string as a last resort.
+        """
+        df = df_in.copy()
+        for col in df.columns:
+                if df[col].dtype == 'object':
+                        # Replace common display N/A with pandas NA
+                        df[col] = df[col].replace('N/A', pd.NA)
+
+                        # Try numeric conversion
+                        conv = pd.to_numeric(df[col], errors='coerce')
+                        non_null_ratio = conv.notna().sum() / max(1, len(conv))
+                        # If more than 50% convertible, use numeric (keeps NaN for others)
+                        if non_null_ratio >= 0.5:
+                                df[col] = conv
+                        else:
+                                # Ensure it's plain Python strings (no mixed types)
+                                df[col] = df[col].astype(str).replace('nan', '')
+
+        return df
+
 # ==========================================
 # DATA LOADING
 # ==========================================
@@ -1067,9 +1097,26 @@ def Report():
         ])
 
         if not df_user_table.empty:
-            df_user_table.index += 1
+            # Search box: allow searching by User ID, Entity or Office
+            user_search = st.text_input("Search (User ID, Entity, Office)", key="user_stats_search")
+
+            df_to_show = df_user_table.copy()
+            if user_search:
+                s = str(user_search).strip().lower()
+                masks = []
+                for c in ["User ID", "Entity", "Office"]:
+                    if c in df_to_show.columns:
+                        masks.append(df_to_show[c].astype(str).str.lower().str.contains(s, na=False))
+                if masks:
+                    mask = masks[0]
+                    for m in masks[1:]:
+                        mask = mask | m
+                    df_to_show = df_to_show[mask]
+
+            df_to_show.index += 1
+            table_key = f"user_stats_table_{filter_state}_{user_search}"
             st.dataframe(
-                df_user_table, 
+                df_to_show, 
                 use_container_width=True, 
                 height=600,
                 column_config={
@@ -1077,7 +1124,7 @@ def Report():
                     "Total Reports": st.column_config.NumberColumn(format="%d"),
                     "Total Activities": st.column_config.NumberColumn(format="%d")
                 },
-                key=f"user_stats_table_{filter_state}"
+                key=table_key
             )
         else:
             st.info("No user details available")
@@ -1098,7 +1145,15 @@ def Report():
         # st.write(f"Showing {len(dff)} records")
         # st.dataframe(dff, use_container_width=True, height=600)
         st.write(f"Showing {min(len(dff), 300)} records")
-        st.dataframe(dff.head(300), use_container_width=True, height=600)
+        sample = dff.head(300)
+        try:
+            sample_safe = _sanitize_for_arrow(sample)
+            st.dataframe(sample_safe, use_container_width=True, height=600)
+        except Exception as e:
+            # Fallback: convert everything to strings to guarantee Arrow-compatibility
+            sample_fallback = sample.astype(str).replace('nan', '')
+            st.warning(f"Data preview required a fallback conversion due to: {str(e)[:200]}")
+            st.dataframe(sample_fallback, use_container_width=True, height=600)
 
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

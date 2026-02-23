@@ -24,14 +24,56 @@ def norm(s):
     if pd.isna(s): return ""
     return str(s).strip().upper()
 
-def derive_type(code):
-    """Derive Report/Query type from the code string."""
-    c = str(code).upper()
+def derive_type(code, name=None):
+    """Derive Report/Query type from the code or name string.
+
+    Priority:
+    1. If `code` contains explicit markers like 'RPT' or 'QRY', use them.
+    2. If `code` starts with 'Q', classify as Query.
+    3. Fallback to `name` (some exports put the Qxx value in the name column).
+    4. Default to 'Report'.
+    """
+    c = str(code).strip().upper() if code is not None else ""
+    n = str(name).strip().upper() if name is not None else ""
+
     if 'RPT' in c: return 'Report'
     if 'QRY' in c: return 'Query'
-    # Fallback heuristics
     if c.startswith('Q'): return 'Query'
-    return 'Report' # Default
+
+    # Fallback: sometimes the worksheet places the Qxx identifier into the "Name" column
+    if n.startswith('Q'): return 'Query'
+
+    return 'Report'
+
+
+def _sanitize_for_arrow(df_in):
+        """Return a copy of the dataframe with columns converted to Arrow-friendly types.
+
+        Strategy:
+        - Work on a copy to avoid SettingWithCopyWarning.
+        - For object dtype columns, try `pd.to_numeric(errors='coerce')` and if a
+            majority of values convert to numeric, keep the numeric dtype.
+        - Replace literal 'N/A' strings with <NA> so integer-like columns become
+            nullable rather than mixed type strings.
+        - If conversion still fails, coerce object columns to string as a last resort.
+        """
+        df = df_in.copy()
+        for col in df.columns:
+                if df[col].dtype == 'object':
+                        # Replace common display N/A with pandas NA
+                        df[col] = df[col].replace('N/A', pd.NA)
+
+                        # Try numeric conversion
+                        conv = pd.to_numeric(df[col], errors='coerce')
+                        non_null_ratio = conv.notna().sum() / max(1, len(conv))
+                        # If more than 50% convertible, use numeric (keeps NaN for others)
+                        if non_null_ratio >= 0.5:
+                                df[col] = conv
+                        else:
+                                # Ensure it's plain Python strings (no mixed types)
+                                df[col] = df[col].astype(str).replace('nan', '')
+
+        return df
 
 # ==========================================
 # DATA LOADING
@@ -77,9 +119,25 @@ def load_data():
     if os.path.exists(PARQUET_FILE):
         try:
             df = pd.read_parquet(PARQUET_FILE)
+            # Ensure 'type' is correctly derived even for older cached files
+            # (Some older exports placed Qxx in the 'name' column and were misclassified.)
             if 'type' not in df.columns or df['type'].isnull().all():
                 st.warning("⚠️ Cached data schema mismatch. Rebuilding...")
                 raise ValueError("Invalid cache")
+
+            # Re-derive type from both code and name to correct any misclassifications
+            try:
+                df['type'] = df.apply(lambda r: derive_type(r.get('code', ''), r.get('name', '')), axis=1)
+                # Attempt to persist corrected cache
+                try:
+                    df.to_parquet(PARQUET_FILE)
+                except Exception:
+                    # Non-fatal: continue with corrected dataframe in memory
+                    pass
+            except Exception:
+                # If re-derivation fails for any reason, fall back to the existing 'type'
+                pass
+
             return df
         except Exception:
             pass # Fall through to rebuild
@@ -95,10 +153,12 @@ def load_data():
     
     for f in excel_files:
         try:
-            temp_df = pd.read_excel(f, dtype=str)
+            temp_df = pd.read_excel(f)
             all_dfs.append(temp_df)
         except Exception as e:
-            st.warning(f"Skipped {os.path.basename(f)} due to error: {e}")
+            error_msg = f"⚠️ Skipped {os.path.basename(f)}: {str(e)[:100]}"
+            st.warning(error_msg)
+            print(error_msg)
 
     if not all_dfs:
         return pd.DataFrame()
@@ -132,8 +192,9 @@ def load_data():
 
     df = df.rename(columns=col_map)
     
-    # Derive TYPE from CODE
-    df['type'] = df['code'].apply(derive_type)
+    # Derive TYPE from CODE and fallback to NAME when needed
+    # Use row-wise apply because some exports put the Qxx identifier into the 'name' column
+    df['type'] = df.apply(lambda r: derive_type(r.get('code', ''), r.get('name', '')), axis=1)
     
     # Ensure numeric columns
     df['year'] = pd.to_numeric(df['year'], errors='coerce').fillna(0).astype(int)
@@ -142,11 +203,16 @@ def load_data():
     
     # Normalization
     df['norm_entity'] = df['entity'].apply(norm)
-    df['norm_code'] = df['name'].apply(norm) 
+    df['norm_code'] = df['name'].apply(norm)
+    
+    # Convert all remaining object columns to string to avoid parquet serialization issues
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].astype(str)
     
     try:
         df.to_parquet(PARQUET_FILE)
-        status.success("✅ Data cache built successfully!")
+        # status.success("✅ Data cache built successfully!")
     except Exception as e:
         status.warning(f"Could not save cache: {e}")
         
@@ -752,13 +818,24 @@ def Report():
 
     # --- TAB: OVERVIEW ---
     with t_over:
-        # KPIs
+        # KPIs - Row 1 (Totals)
         k1, k2, k3, k4, k5 = st.columns(5)
         with k1: metric_card("Total Generated", f"{s['totals']['reports'] + s['totals']['queries']:,}", COLOR_MIXED)
         with k2: metric_card("Reports Generated", f"{s['totals']['reports']:,}", COLOR_REPORT)
         with k3: metric_card("Queries Generated", f"{s['totals']['queries']:,}", COLOR_QUERY)
         with k4: metric_card("Top Active Entity", f"{s['topEntities']['overall']['code']}", "#d97706")
         with k5: metric_card("Inactive Entities", f"{len(inactive_entities)}", "#ef4444")
+        
+        # KPIs - Row 2 (Distinct Counts)
+        st.markdown("---")
+        d1, d2, d3, d4, d5 = st.columns(5)
+        distinct_reports = len(df[df['type'] == 'Report']['name'].unique()) if not df.empty else 0
+        distinct_queries = len(df[df['type'] == 'Query']['name'].unique()) if not df.empty else 0
+        with d1: metric_card("Total Reports + Queries", f"{distinct_reports + distinct_queries:,}", COLOR_MIXED)
+        with d2: metric_card("Reports Type", f"{distinct_reports:,}", COLOR_REPORT)
+        with d3: metric_card("Queries Type", f"{distinct_queries:,}", COLOR_QUERY)
+        with d4: metric_card("Inactive Reports", f"{len(inactive_reports)}", "#ef4444")
+        with d5: metric_card("Inactive Queries", f"{len(inactive_queries)}", "#ef4444")
         st.markdown("---")
         
         r1c1, r1c2 = st.columns(2)
@@ -843,11 +920,12 @@ def Report():
     # --- TAB: REPORTS ---
     with t_rep:
         # KPIs Specific
-        rk1, rk2, rk3, rk4 = st.columns(4)
+        rk1, rk2, rk3, rk4, rk5 = st.columns(5)
         with rk1: metric_card("Total Reports", f"{s['totals']['reports']:,}", COLOR_REPORT)
-        with rk2: metric_card("Active Entities", f"{len(s['activeEntities']):,}", "black")
-        with rk3: metric_card("Top Reporting Entity", f"{s['topEntities']['reports']['code']}", "#d97706")
-        with rk4: metric_card("Inactive Report Types", f"{len(inactive_reports)}", "#ef4444")
+        with rk2: metric_card("Active Report Types", f"{len(df[df['type'] == 'Report']['name'].unique()):,}", COLOR_REPORT)
+        with rk3: metric_card("Inactive Report Types", f"{len(inactive_reports)}", "#ef4444")
+        with rk4: metric_card("Top Reporting Entity", f"{s['topEntities']['reports']['code']}", "#d97706")
+        with rk5: metric_card("Active Entities", f"{len(s['activeEntities']):,}", "black")
         st.markdown("---")
         
         rr1, rr2 = st.columns(2)
@@ -917,11 +995,12 @@ def Report():
     # --- TAB: QUERIES ---
     with t_que:
         # KPIs Specific
-        qk1, qk2, qk3, qk4 = st.columns(4)
+        qk1, qk2, qk3, qk4, qk5 = st.columns(5)
         with qk1: metric_card("Total Queries", f"{s['totals']['queries']:,}", COLOR_QUERY)
-        with qk2: metric_card("Active Entities", f"{len(s['activeEntities']):,}", "black")
-        with qk3: metric_card("Top Querying Entity", f"{s['topEntities']['queries']['code']}", "#d97706")
-        with qk4: metric_card("Inactive Query Types", f"{len(inactive_queries)}", "#ef4444")
+        with qk2: metric_card("Active Query Types", f"{len(df[df['type'] == 'Query']['name'].unique()):,}", COLOR_QUERY)
+        with qk3: metric_card("Inactive Query Types", f"{len(inactive_queries)}", "#ef4444")
+        with qk4: metric_card("Top Querying Entity", f"{s['topEntities']['queries']['code']}", "#d97706")
+        with qk5: metric_card("Active Entities", f"{len(s['activeEntities']):,}", "black")
         st.markdown("---")
         
         qr1, qr2 = st.columns(2)
@@ -1018,9 +1097,26 @@ def Report():
         ])
 
         if not df_user_table.empty:
-            df_user_table.index += 1
+            # Search box: allow searching by User ID, Entity or Office
+            user_search = st.text_input("Search (User ID, Entity, Office)", key="user_stats_search")
+
+            df_to_show = df_user_table.copy()
+            if user_search:
+                s = str(user_search).strip().lower()
+                masks = []
+                for c in ["User ID", "Entity", "Office"]:
+                    if c in df_to_show.columns:
+                        masks.append(df_to_show[c].astype(str).str.lower().str.contains(s, na=False))
+                if masks:
+                    mask = masks[0]
+                    for m in masks[1:]:
+                        mask = mask | m
+                    df_to_show = df_to_show[mask]
+
+            df_to_show.index += 1
+            table_key = f"user_stats_table_{filter_state}_{user_search}"
             st.dataframe(
-                df_user_table, 
+                df_to_show, 
                 use_container_width=True, 
                 height=600,
                 column_config={
@@ -1028,7 +1124,7 @@ def Report():
                     "Total Reports": st.column_config.NumberColumn(format="%d"),
                     "Total Activities": st.column_config.NumberColumn(format="%d")
                 },
-                key=f"user_stats_table_{filter_state}"
+                key=table_key
             )
         else:
             st.info("No user details available")
@@ -1049,7 +1145,15 @@ def Report():
         # st.write(f"Showing {len(dff)} records")
         # st.dataframe(dff, use_container_width=True, height=600)
         st.write(f"Showing {min(len(dff), 300)} records")
-        st.dataframe(dff.head(300), use_container_width=True, height=600)
+        sample = dff.head(300)
+        try:
+            sample_safe = _sanitize_for_arrow(sample)
+            st.dataframe(sample_safe, use_container_width=True, height=600)
+        except Exception as e:
+            # Fallback: convert everything to strings to guarantee Arrow-compatibility
+            sample_fallback = sample.astype(str).replace('nan', '')
+            st.warning(f"Data preview required a fallback conversion due to: {str(e)[:200]}")
+            st.dataframe(sample_fallback, use_container_width=True, height=600)
 
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

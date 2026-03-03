@@ -1,7 +1,11 @@
 import streamlit as st
 
 # Set page layout to wide mode (must be the first Streamlit command)
-st.set_page_config(layout="wide")
+st.set_page_config(
+       page_title="My Dashboard",
+    page_icon="📊",
+    layout="wide"
+    )
 import base64
 
 # Read and encode image
@@ -22,7 +26,8 @@ from Economic_page import Economic
 from program_page import Program
 from Report_page import Report
 from Supplier_page import Supplier
-
+from  Monitoring_dashboard_page import Monitoring
+from Overview import Overview_page
 
 #st.sidebar.image("Screenshot 2025-09-02 at 3.58.31 in the afternoon.png",)
 
@@ -287,43 +292,84 @@ st.markdown(
 
 
 
+# pages = {
+#         "ទិដ្ឋភាពទូទៅ": [ st.Page(Overview_page, title="ទិដ្ឋភាពទូទៅ")],    
+        
+#     "Monitoring": [
+#         st.Page(Monitoring, title="📈  Monitoring Dashboard"),
+#     ],
+#     "មាតិកាគណនីនៃប្លង់គណនេយ្យ": [
+#         st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ និងរដ្ឋបាល"),
+#         st.Page(Economic, title="📊  មាតិកាគណនី"),
+#         st.Page(Program, title="📋  កម្មវិធី"),
+#         st.Page(Geography, title="🌍  ភូមិសាស្រ្ត"),
+#         st.Page(Project, title="📂  គម្រោង"),
+#         st.Page(Functionpage, title="⚙️  មុខងារ"),
+#         st.Page(Fund, title="💰  មូលនិធិ"),
+        
+#     ],
+#     "ទិន្នន័យមេ": [
+#          st.Page(FmisEntity, title="🏛️  អង្គភាពការងារ"),
+#          st.Page(UserAlias, title="👤  អ្នកប្រើប្រាស់"),
+#          st.Page(Report, title="📘  របាយការណ៍"),
+#          st.Page(Supplier, title="🚚 អ្នកផ្គត់ផ្គង់"),
+
+#     ],
+# }   
+        
+
+
+
+
+# pg = st.navigation(pages)
+
+# # Add sidebar content
+# with st.sidebar:
+
+#     st.markdown("**អំពី**")
+#     st.markdown("រៀបចំ​ និងអភិវឌ្ឍដោយក្រុមការងារការិយាល័យគ្រប់គ្រងព័ត៌មាន")
+#     st.markdown("ត្រូវការជំនួយ, សូមទាក់ទងមកកាន់មជ្ឈមណ្ឌលផ្ដល់ព័ត៌មានFMISតាមរយ:(+855)23 430 063 និងតាមបណ្ដាញផ្សេងៗ។")
+
+
+
+# pg.run()
+
+
+
+
 pages = {
+
+    "Monitoring": [
+        st.Page(Monitoring, title="📈 Monitoring Dashboard"),
+    ],
+
+    # "ទិដ្ឋភាពទូទៅ": [
+    #     st.Page(Overview_page, title="ទិដ្ឋភាពទូទៅ", default=True)
+    # ],
+
     "មាតិកាគណនីនៃប្លង់គណនេយ្យ": [
-        st.Page(data_reader_page, title="🏢  អង្គភាពប្រតិបត្តិ និងរដ្ឋបាល"),
-        st.Page(Economic, title="📊  មាតិកាគណនី"),
-        st.Page(Program, title="📋  កម្មវិធី"),
-        st.Page(Geography, title="🌍  ភូមិសាស្រ្ត"),
-        st.Page(Project, title="📂  គម្រោង"),
-        st.Page(Functionpage, title="⚙️  មុខងារ"),
-        st.Page(Fund, title="💰  មូលនិធិ"),
-        
+        st.Page(data_reader_page, title="🏢 អង្គភាពប្រតិបត្តិ និងរដ្ឋបាល"),
+        st.Page(Economic, title="📊 មាតិកាគណនី"),
+        st.Page(Program, title="📋 កម្មវិធី"),
+        st.Page(Geography, title="🌍 ភូមិសាស្រ្ត"),
+        st.Page(Project, title="📂 គម្រោង"),
+        st.Page(Functionpage, title="⚙️ មុខងារ"),
+        st.Page(Fund, title="💰 មូលនិធិ"),
     ],
+
     "ទិន្នន័យមេ": [
-         st.Page(FmisEntity, title="🏛️  អង្គភាពការងារ"),
-         st.Page(UserAlias, title="👤  អ្នកប្រើប្រាស់"),
-         st.Page(Report, title="📘  របាយការណ៍"),
-         st.Page(Supplier, title="🚚 អ្នកផ្គត់ផ្គង់"),
+        st.Page(FmisEntity, title="🏛️ អង្គភាពការងារ"),
+        st.Page(UserAlias, title="👤 អ្នកប្រើប្រាស់"),
+        st.Page(Report, title="📘 របាយការណ៍"),
+        st.Page(Supplier, title="🚚 អ្នកផ្គត់ផ្គង់"),
     ],
-}   
-        
-
-
-
+}
 
 pg = st.navigation(pages)
 
-# Add sidebar content
 with st.sidebar:
-
     st.markdown("**អំពី**")
-    st.markdown("រៀបចំ​ និងអភិវឌ្ឍដោយក្រុមការងារការិយាល័យគ្រប់គ្រងព័ត៌មាន")
-    st.markdown("ត្រូវការជំនួយ, សូមទាក់ទងមកកាន់មជ្ឈមណ្ឌលផ្ដល់ព័ត៌មានFMISតាមរយ:(+855)23 430 063 និងតាមបណ្ដាញផ្សេងៗ។")
-
-
+    st.markdown("រៀបចំ និងអភិវឌ្ឍដោយក្រុមការងារការិយាល័យគ្រប់គ្រងព័ត៌មាន")
+    st.markdown("ត្រូវការជំនួយ, សូមទាក់ទង FMIS (+855)23 430 063")
 
 pg.run()
-
-
-
-
-
